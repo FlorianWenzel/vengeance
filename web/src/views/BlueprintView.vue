@@ -473,11 +473,11 @@ function findingsLink(assetId: number | null) {
           <p v-if="locked && aimed" class="pointer-events-none absolute top-[calc(50%+1.6rem)] left-1/2 -translate-x-1/2 rounded-[3px] bg-ink-950/80 px-2 py-1 font-mono text-xs text-beam-hi" data-testid="blueprint-aim">
             {{ aimed }} <span class="text-fog-400">· E to inspect</span>
           </p>
-          <canvas ref="minimapEl" class="pointer-events-none absolute top-2 right-2 h-40 w-40 rounded-[4px] border border-ink-600 bg-ink-950/75" aria-label="Floor plan" data-testid="blueprint-minimap" />
+          <canvas ref="minimapEl" class="pointer-events-none absolute top-2 right-2 z-[250] h-40 w-40 rounded-[4px] border border-ink-600 bg-ink-950/75" aria-label="Floor plan" data-testid="blueprint-minimap" />
           <button
             v-if="!locked"
             type="button"
-            class="absolute inset-0 m-auto flex h-fit w-fit flex-col items-center gap-2 rounded-[6px] border border-beam/50 bg-ink-950/85 px-6 py-5 text-center"
+            class="absolute inset-0 z-[300] m-auto flex h-fit w-fit flex-col items-center gap-2 rounded-[6px] border border-beam/50 bg-ink-950/95 px-6 py-5 text-center"
             data-testid="blueprint-enter-walk"
             @click="enterWalk"
           >
