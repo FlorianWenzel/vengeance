@@ -1,0 +1,25 @@
+# Dex for local development and the e2e suite. Not for production.
+issuer: http://dex:5556/dex
+storage:
+  type: memory
+web:
+  http: 0.0.0.0:5556
+oauth2:
+  skipApprovalScreen: true
+enablePasswordDB: true
+staticPasswords:
+  - email: admin@example.com
+    # "password"
+    hash: "$2a$10$DEp13/1b8XWhrGeAi43bHOWdSizKFWxOI4JNylwQFHhp6zAA4MKba"
+    username: admin
+    userID: 08a8684b-db88-4b73-90a9-3cd1661f5466
+  - email: intruder@example.com
+    hash: "$2a$10$DEp13/1b8XWhrGeAi43bHOWdSizKFWxOI4JNylwQFHhp6zAA4MKba"
+    username: intruder
+    userID: 5f3c8a1e-2b4d-4c6e-9f10-1a2b3c4d5e6f
+staticClients:
+  - id: vengeance
+    secret: dev-secret
+    name: Vengeance
+    redirectURIs:
+      - http://localhost:8080/auth/callback

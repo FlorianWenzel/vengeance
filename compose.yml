@@ -1,0 +1,45 @@
+# Local stack: Postgres, Dex (OIDC), Mailpit (catches mail) and Vengeance.
+# The browser must resolve "dex" to 127.0.0.1 (add it to /etc/hosts, or the e2e suite
+# maps it inside Chromium) because the OIDC issuer URL has to be the same for both.
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: vengeance
+      POSTGRES_PASSWORD: vengeance
+      POSTGRES_DB: vengeance
+    ports: ["127.0.0.1:5433:5432"]
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "vengeance"]
+      interval: 2s
+      retries: 30
+
+  dex:
+    image: ghcr.io/dexidp/dex:v2.46.1
+    command: ["dex", "serve", "/etc/dex/config.yaml"]
+    volumes: ["./deploy/dev/dex.yaml:/etc/dex/config.yaml:ro"]
+    ports: ["127.0.0.1:5556:5556"]
+
+  mailpit:
+    image: axllent/mailpit:v1.33.1
+    ports: ["127.0.0.1:${MAILPIT_PORT:-8025}:8025"]
+
+  vengeance:
+    build: .
+    depends_on:
+      postgres: { condition: service_healthy }
+      dex: { condition: service_started }
+    environment:
+      VENGEANCE_DATABASE_URL: postgres://vengeance:vengeance@postgres:5432/vengeance?sslmode=disable
+      VENGEANCE_BASE_URL: http://localhost:8080
+      VENGEANCE_SECRET: dev-only-secret-0123456789abcdef0123456789
+      VENGEANCE_OIDC_ISSUER: http://dex:5556/dex
+      VENGEANCE_OIDC_CLIENT_ID: vengeance
+      VENGEANCE_OIDC_CLIENT_SECRET: dev-secret
+      VENGEANCE_OIDC_ALLOWED_EMAILS: admin@example.com
+      VENGEANCE_SMTP_HOST: mailpit
+      VENGEANCE_SMTP_PORT: "1025"
+      VENGEANCE_SMTP_TLS: none
+      VENGEANCE_SMTP_FROM: Vengeance <vengeance@example.com>
+      VENGEANCE_KEV_URL: ${VENGEANCE_KEV_URL:-off}
+    ports: ["127.0.0.1:8080:8080"]

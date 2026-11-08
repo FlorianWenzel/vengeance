@@ -1,0 +1,33 @@
+version: 2
+project_name: vengeance
+
+before:
+  hooks:
+    - sh -c "cd web && npm ci --no-audit --no-fund && npm run build"
+
+builds:
+  - main: ./cmd/vengeance
+    env: [CGO_ENABLED=0]
+    goos: [linux, darwin]
+    goarch: [amd64, arm64]
+    flags: [-trimpath]
+    ldflags: ["-s -w -X main.version={{ .Version }}"]
+
+archives:
+  - formats: [tar.gz]
+    files: [LICENSE, README.md]
+
+checksum:
+  name_template: checksums.txt
+
+signs:
+  - cmd: cosign
+    certificate: "${artifact}.pem"
+    signature: "${artifact}.sig"
+    args: ["sign-blob", "--yes", "--output-certificate=${certificate}", "--output-signature=${signature}", "${artifact}"]
+    artifacts: checksum
+
+changelog:
+  sort: asc
+  filters:
+    exclude: ["^docs:", "^test:", "^chore:"]
