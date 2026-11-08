@@ -21,6 +21,7 @@ const routes: RouteRecordRaw[] = [
     component: () => import('./views/NotificationsView.vue'),
     meta: { title: 'Notifications' },
   },
+  { path: '/ai', name: 'ai', component: () => import('./views/AiView.vue'), meta: { title: 'AI assistants' } },
   { path: '/:pathMatch(.*)*', name: 'not-found', component: () => import('./views/NotFoundView.vue'), meta: { title: 'Not found' } },
 ]
 

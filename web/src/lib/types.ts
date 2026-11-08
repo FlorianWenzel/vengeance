@@ -191,6 +191,16 @@ export interface Source {
   createdAt: string
 }
 
+export interface ApiToken {
+  id: number
+  name: string
+  tokenPrefix: string
+  scope: 'read' | 'write'
+  createdBy: string | null
+  createdAt: string
+  lastUsedAt: string | null
+}
+
 export type ChannelKind = 'email' | 'ntfy' | 'webhook'
 
 export interface ChannelConfig {

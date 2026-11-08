@@ -30,6 +30,21 @@ One container and a Postgres database. AGPL-3.0.
   findings, findings that became riskier, sources that went quiet, expired risk acceptances and
   coverage gaps. Instantly or as a daily or weekly digest. A nightly rescan never alerts twice.
 
+## Talk to it from Claude (MCP)
+
+Vengeance is an MCP server at `/mcp` (streamable HTTP). Create a token under **AI assistants**
+(read-only or read-write), then:
+
+```bash
+claude mcp add --transport http vengeance https://vengeance.example.com/mcp \
+  --header "Authorization: Bearer vgp_…"
+```
+
+Tools: `vengeance_overview`, `list_findings`, `get_finding`, `list_fixes`, `list_assets`, `get_asset`,
+`get_coverage`, `list_projects`, `list_sources`, and with a read-write token `triage_findings`,
+`create_asset`, `update_asset`. Combined with a GitHub MCP server this covers inventory discovery:
+*"compare my GitHub repositories with the Vengeance inventory and add the missing ones."*
+
 ## Quick start (local)
 
 ```bash

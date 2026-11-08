@@ -35,6 +35,7 @@ const inventory: NavItem[] = [
 const setup: NavItem[] = [
   { to: '/sources', label: 'Sources', icon: 'radio-tower', testid: 'nav-sources', match: (p) => p.startsWith('/sources') },
   { to: '/notifications', label: 'Notifications', icon: 'bell', testid: 'nav-notifications', match: (p) => p.startsWith('/notifications') },
+  { to: '/ai', label: 'AI assistants', icon: 'bot', testid: 'nav-ai', match: (p) => p.startsWith('/ai') },
 ]
 const groups = [
   { label: 'Triage', items: primary },

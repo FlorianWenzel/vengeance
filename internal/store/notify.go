@@ -337,8 +337,9 @@ func (s *Store) Enqueue(ctx context.Context, r Rule, key, subject, body string, 
 		status = "digest"
 	}
 	raw, _ := json.Marshal(data)
-	ct, err := s.DB.Exec(ctx, `INSERT INTO notifications (rule_id, channel_id, dedupe_key, subject, body, data, status)
-		VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (rule_id, dedupe_key) DO NOTHING`, r.ID, r.ChannelID, key, subject, body, raw, status)
+	// created_at comes from the app clock, like the due check, so DB/app clock skew can't delay sends.
+	ct, err := s.DB.Exec(ctx, `INSERT INTO notifications (rule_id, channel_id, dedupe_key, subject, body, data, status, created_at)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT (rule_id, dedupe_key) DO NOTHING`, r.ID, r.ChannelID, key, subject, body, raw, status, s.Now())
 	if err != nil {
 		return false, err
 	}

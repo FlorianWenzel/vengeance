@@ -188,6 +188,18 @@ Rules:
 Log: `GET /api/v1/notifications?limit=50` →
 `[{ id, ruleName, channelName, subject, status: 'pending'|'digest'|'sent'|'failed', createdAt, sentAt, error }]`
 
+## API tokens and MCP
+
+Personal tokens for AI assistants and scripts (`vgp_…`, stored hashed):
+
+- `GET /api/v1/tokens` → `[{ id, name, tokenPrefix, scope: 'read'|'write', createdBy, createdAt, lastUsedAt }]`
+- `POST /api/v1/tokens` `{ name, scope }` → token `& { token }` (only time it is shown)
+- `DELETE /api/v1/tokens/{id}` → `204`
+
+`/mcp` is a stateless streamable-HTTP MCP endpoint authenticated with `Authorization: Bearer vgp_…`.
+Read tokens see only read tools; write tokens add `triage_findings`, `create_asset` and `update_asset`.
+Triage done over MCP is recorded with actor `mcp:<token name>`.
+
 ## Prioritisation
 
 - P1: advisory is in CISA KEV, or severity critical with a fix on an asset tagged `internet-facing`

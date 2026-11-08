@@ -17,6 +17,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 
 	"github.com/FlorianWenzel/vengeance/internal/ingest"
+	"github.com/FlorianWenzel/vengeance/internal/mcpserver"
 	"github.com/FlorianWenzel/vengeance/internal/notify"
 	"github.com/FlorianWenzel/vengeance/internal/store"
 )
@@ -58,6 +59,7 @@ func New(st *store.Store, eng *notify.Engine, cfg Config, log *slog.Logger) http
 		}
 		_, _ = w.Write([]byte("ok"))
 	})
+	r.Handle("/mcp", mcpserver.Handler(st, cfg.Version, log))
 	r.Get("/auth/login", s.login)
 	r.Get("/auth/callback", s.callback)
 	r.Post("/auth/logout", s.logout)
@@ -99,6 +101,9 @@ func New(st *store.Store, eng *notify.Engine, cfg Config, log *slog.Logger) http
 			r.Patch("/rules/{id}", s.saveRule)
 			r.Delete("/rules/{id}", s.deleteRule)
 			r.Get("/notifications", s.listNotifications)
+			r.Get("/tokens", s.listTokens)
+			r.Post("/tokens", s.createToken)
+			r.Delete("/tokens/{id}", s.deleteToken)
 		})
 		r.NotFound(func(w http.ResponseWriter, _ *http.Request) { writeErr(w, 404, "no such endpoint") })
 	})
@@ -660,4 +665,41 @@ func (s *Server) listNotifications(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, 200, x)
+}
+
+func (s *Server) listTokens(w http.ResponseWriter, r *http.Request) {
+	x, err := s.store.ListAPITokens(r.Context())
+	if err != nil {
+		s.fail(w, err)
+		return
+	}
+	writeJSON(w, 200, x)
+}
+
+func (s *Server) createToken(w http.ResponseWriter, r *http.Request) {
+	var in struct {
+		Name  string `json:"name"`
+		Scope string `json:"scope"`
+	}
+	if !decode(w, r, &in) {
+		return
+	}
+	t, err := s.store.CreateAPIToken(r.Context(), currentUser(r).ID, in.Name, in.Scope)
+	if err != nil {
+		s.fail(w, err)
+		return
+	}
+	writeJSON(w, 201, t)
+}
+
+func (s *Server) deleteToken(w http.ResponseWriter, r *http.Request) {
+	id, ok := idParam(w, r)
+	if !ok {
+		return
+	}
+	if err := s.store.DeleteAPIToken(r.Context(), id); err != nil {
+		s.fail(w, err)
+		return
+	}
+	w.WriteHeader(204)
 }
