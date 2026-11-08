@@ -152,3 +152,47 @@ minimap(): string                        // JSON: { player: {x, z, heading}, bou
 - `labels()` in walk mode returns only what is within ~8 m and in front of the player: host signs,
   rack-unit (namespace) labels on the rack face, workload/image labels when closer than ~2 m.
 - Escape in walk mode is handled by the page (it exits pointer lock); `key("Escape")` is not sent.
+
+## 5. Walk mode as a night city (replaces the room of section 4)
+
+Walk mode is a noir city at night. Every object stands for something real and behaves like it;
+there is no decoration that doesn't carry meaning. Orbit mode stays the blueprint.
+
+| Real thing | In the city |
+|---|---|
+| cluster | a district (one street grid per cluster) |
+| host / server | a building on a city block; building height = number of apps |
+| app (namespace) | one floor of that building, its name painted on the facade |
+| workload | a window/apartment on that floor; window lit = ready, dark = not ready (`ready < desired` → some panes dark) |
+| image | the silhouette/furniture behind the window (one per image) |
+| domain | a street door with a neon address sign at the base of the building whose app serves it (`group.domains`); unmatched domains are neon signs on a plain door in the square |
+| repository | a book on the shelves of the public library (a building on the square); spine colour = status |
+| image in the inventory | a shipping crate in the harbour warehouse (`scene.images`), running images are stamped, idle ones dusty |
+| scan source | a searchlight on a rooftop sweeping the sky; a stale source's searchlight is off |
+| P1 open | fire and smoke from the window (or the book/crate) |
+| P2 open | broken window pane / torn book / dented crate |
+| P3 / P4 | cracks and grime on the facade, scaled by count |
+| misconfiguration | a window or the street door left open (`workload.misconfig > 0`) |
+| leaked secret | a key left in the lock of the door (`status.kinds.secret > 0`) |
+| stale / never scanned | the street lamps in front of the building are out, the block is dark |
+| clean | warm light, intact glass, lamps on |
+
+The HUD aim readout names the real thing and the metaphor's meaning ("api · slowbloom — window broken:
+3 P2 findings"), so nobody has to learn the mapping first.
+
+### Scene additions (all optional for older servers)
+
+```ts
+type Status = { ...; kinds: { vuln: number; secret: number; misconfig: number; sast: number } }  // open counts per kind
+type Workload = { ...; misconfig: number }          // open cluster misconfigurations attributed to this workload
+type Group = { ...; domains: string[] }             // hostnames routed to this namespace
+type Scene = {
+  ...
+  images: { id: string; assetId: number; name: string; status: Status; running: boolean }[]   // every image asset
+  sources: { name: string; lastSeenAt: string | null; stale: boolean }[]                      // scan sources
+}
+```
+
+### Topology ingest addition
+
+`routes: [{ namespace: string, hostnames: string[] }]` from HTTPRoutes (and Ingresses).
