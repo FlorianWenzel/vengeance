@@ -113,6 +113,20 @@ pub struct Open {
     pub total: f64,
 }
 
+/// Open findings per kind (section 5; absent on older servers).
+#[derive(Clone, Debug, Default, Deserialize)]
+#[serde(default)]
+pub struct Kinds {
+    #[serde(deserialize_with = "de_f64")]
+    pub vuln: f64,
+    #[serde(deserialize_with = "de_f64")]
+    pub secret: f64,
+    #[serde(deserialize_with = "de_f64")]
+    pub misconfig: f64,
+    #[serde(deserialize_with = "de_f64")]
+    pub sast: f64,
+}
+
 #[derive(Clone, Debug, Default, Deserialize)]
 #[serde(default)]
 pub struct Status {
@@ -122,6 +136,85 @@ pub struct Status {
     pub open: Open,
     #[serde(deserialize_with = "de_bool")]
     pub stale: bool,
+    #[serde(deserialize_with = "de_obj")]
+    pub kinds: Kinds,
+}
+
+impl Status {
+    pub fn count(&self, l: Level) -> u32 {
+        let v = match l {
+            Level::P1 => self.open.p1,
+            Level::P2 => self.open.p2,
+            Level::P3 => self.open.p3,
+            Level::P4 => self.open.p4,
+            _ => 0.0,
+        };
+        v.max(0.0).round() as u32
+    }
+    pub fn secrets(&self) -> u32 {
+        self.kinds.secret.max(0.0).round() as u32
+    }
+    pub fn misconfigs(&self) -> u32 {
+        self.kinds.misconfig.max(0.0).round() as u32
+    }
+}
+
+fn de_strings<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<String>, D::Error> {
+    Ok(match Value::deserialize(d)? {
+        Value::Array(items) => items.into_iter().filter_map(|v| v.as_str().map(|s| s.to_string())).filter(|s| !s.is_empty()).collect(),
+        _ => Vec::new(),
+    })
+}
+
+/// An image asset in the inventory (`scene.images`).
+#[derive(Clone, Debug, Default, Deserialize)]
+#[serde(default)]
+pub struct InventoryImage {
+    #[serde(deserialize_with = "de_string")]
+    pub id: String,
+    #[serde(deserialize_with = "de_string")]
+    pub name: String,
+    #[serde(deserialize_with = "de_obj")]
+    pub status: Status,
+    #[serde(deserialize_with = "de_bool")]
+    pub running: bool,
+}
+
+/// A scan source (`scene.sources`).
+#[derive(Clone, Debug, Default, Deserialize)]
+#[serde(default)]
+pub struct Source {
+    #[serde(deserialize_with = "de_string")]
+    pub name: String,
+    #[serde(rename = "lastSeenAt", deserialize_with = "de_string")]
+    pub last_seen_at: String,
+    #[serde(deserialize_with = "de_bool")]
+    pub stale: bool,
+}
+
+/// Days since 1970-01-01 (fractional) for an RFC 3339 timestamp; None when unparseable.
+pub fn epoch_days(ts: &str) -> Option<f64> {
+    let b = ts.as_bytes();
+    if b.len() < 10 {
+        return None;
+    }
+    let num = |s: &str| s.parse::<i64>().ok();
+    let y = num(ts.get(0..4)?)?;
+    let m = num(ts.get(5..7)?)?;
+    let d = num(ts.get(8..10)?)?;
+    let (hh, mm) = if b.len() >= 16 { (num(ts.get(11..13)?).unwrap_or(0), num(ts.get(14..16)?).unwrap_or(0)) } else { (0, 0) };
+    if !(1..=12).contains(&m) || !(1..=31).contains(&d) {
+        return None;
+    }
+    // Howard Hinnant's days_from_civil.
+    let y = if m <= 2 { y - 1 } else { y };
+    let era = if y >= 0 { y } else { y - 399 } / 400;
+    let yoe = y - era * 400;
+    let mp = (m + 9) % 12;
+    let doy = (153 * mp + 2) / 5 + d - 1;
+    let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    let days = era * 146097 + doe - 719468;
+    Some(days as f64 + (hh as f64 * 60.0 + mm as f64) / 1440.0)
 }
 
 #[derive(Clone, Debug, Default, Deserialize)]
@@ -150,6 +243,8 @@ pub struct Workload {
     pub ready: f64,
     #[serde(deserialize_with = "de_f64")]
     pub desired: f64,
+    #[serde(deserialize_with = "de_f64")]
+    pub misconfig: f64,
     #[serde(deserialize_with = "de_obj")]
     pub status: Status,
     #[serde(deserialize_with = "de_list")]
@@ -167,6 +262,8 @@ pub struct Group {
     pub status: Status,
     #[serde(deserialize_with = "de_list")]
     pub workloads: Vec<Workload>,
+    #[serde(deserialize_with = "de_strings")]
+    pub domains: Vec<String>,
 }
 
 #[derive(Clone, Debug, Default, Deserialize)]
@@ -208,6 +305,10 @@ pub struct Scene {
     pub hosts: Vec<Host>,
     #[serde(deserialize_with = "de_list")]
     pub external: Vec<External>,
+    #[serde(deserialize_with = "de_list")]
+    pub images: Vec<InventoryImage>,
+    #[serde(deserialize_with = "de_list")]
+    pub sources: Vec<Source>,
 }
 
 impl Scene {
@@ -241,5 +342,14 @@ mod tests {
         assert!(Scene::parse("[]").is_err());
         assert!(Scene::parse("{").is_err());
         assert_eq!(Scene::parse("{}").unwrap().hosts.len(), 0);
+    }
+
+    #[test]
+    fn dates() {
+        assert_eq!(epoch_days("1970-01-02T00:00:00Z"), Some(1.0));
+        let a = epoch_days("2026-11-08T09:00:00Z").unwrap();
+        let b = epoch_days("2026-10-30T09:00:00Z").unwrap();
+        assert!((a - b - 9.0).abs() < 1e-9);
+        assert_eq!(epoch_days("garbage"), None);
     }
 }

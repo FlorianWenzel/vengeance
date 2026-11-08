@@ -5,13 +5,13 @@
 
 use glam::{Vec2, Vec3};
 
-use crate::room::Rect;
+use crate::city::Rect;
 
 pub const EYE: f32 = 1.68;
 pub const RADIUS: f32 = 0.28;
 pub const WALK: f32 = 1.4;
 pub const RUN: f32 = 3.0;
-pub const REACH: f32 = 4.0;
+pub const REACH: f32 = 90.0;
 pub const MAX_PITCH: f32 = 1.35;
 pub const TURN_RATE: f32 = 1.9; // rad/s for arrow-key turning
 pub const LOOK_RATE: f32 = 0.0022; // rad per CSS pixel of mouse movement

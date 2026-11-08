@@ -1,16 +1,15 @@
-//! Walk mode (docs/topology.md section 4): first-person movement, crosshair picking,
-//! nearby labels and the minimap.
+//! Walk mode (docs/topology.md sections 4 and 5): first-person movement through the night city,
+//! crosshair picking, nearby labels with their metaphor meaning, aim info and the minimap.
 
 use glam::{Vec2, Vec3, Vec4Swizzles};
 use serde::Serialize;
 
 use crate::engine::{Engine, Label, Mode};
 use crate::layout::{self, Kind, Layout};
-use crate::room;
+use crate::city::{self, beam_dir};
+use crate::geo::{rgba, GLOW};
 use crate::walk::{self, Walker, EYE, REACH};
 
-const LABEL_RANGE: f32 = 8.0;
-const CLOSE_RANGE: f32 = 2.0;
 const GLIDE_MS: f64 = 900.0;
 
 #[derive(Serialize)]
@@ -100,7 +99,7 @@ impl Engine {
         let (f, s, h) = (id_of(&self.layout, self.focus), id_of(&self.layout, self.selected), id_of(&self.layout, self.hovered));
         self.layout = match self.mode {
             Mode::Orbit => layout::build(&self.scene),
-            Mode::Walk => room::build_walk(&self.scene),
+            Mode::Walk => city::build_city(&self.scene),
         };
         self.geo_version += 1;
         let find = |l: &Layout, id: Option<String>| id.and_then(|id| l.index.get(&id).copied());
@@ -217,37 +216,44 @@ impl Engine {
     pub(crate) fn walk_to(&mut self, idx: usize) {
         self.selected = Some(idx);
         self.dirty = true;
-        let Some(room) = self.layout.room.as_ref() else { return };
+        let Some(city) = self.layout.room.as_ref() else { return };
         let n = &self.layout.nodes[idx];
-        let f = Vec2::new(n.facing.x, n.facing.z).normalize_or(Vec2::Y);
         let b = n.body;
         let c = b.center();
+        let f = if n.facing == Vec3::ZERO {
+            // Searchlights, lamps, cranes: look at them from where we are.
+            (self.walker.pos - Vec2::new(c.x, c.z)).normalize_or(Vec2::Y)
+        } else {
+            Vec2::new(n.facing.x, n.facing.z).normalize_or(Vec2::Y)
+        };
         let half = (b.size().x * f.x.abs() + b.size().z * f.y.abs()) * 0.5;
         let front = Vec2::new(c.x, c.z) + f * half;
+        // Stand far enough back that the element sits comfortably in view.
         let mut dist: f32 = match n.kind {
-            Kind::Host => 2.2,
-            Kind::Group => 1.4,
-            Kind::Workload => 0.85,
-            Kind::Image => 0.6,
-            Kind::External => 1.2,
+            Kind::Host => 12.0,
+            Kind::Group => 6.0,
+            Kind::Workload => 3.0,
+            Kind::Image => 1.6,
+            Kind::External => match n.kind_name.as_str() {
+                "repository" => 1.7,
+                "image" => 2.5,
+                "source" | "registry" => 14.0,
+                _ => 3.0,
+            },
         };
-        // Low elements: stand back far enough that looking at them is not a steep look down.
-        let drop = (EYE - c.y).max(0.0);
-        if n.kind != Kind::Host {
-            dist = dist.max(drop / 0.65_f32.tan());
-        }
+        let rise = (c.y - EYE).max(0.0);
+        dist = dist.max(rise / 0.62f32.tan());
         let mut stand = front + f * dist;
-        while walk::blocked(stand, &room.colliders) && dist > 0.3 {
-            dist -= 0.1;
+        while walk::blocked(stand, &city.colliders) && dist > 0.4 {
+            dist -= 0.25;
             stand = front + f * dist;
         }
-        if walk::blocked(stand, &room.colliders) {
+        if walk::blocked(stand, &city.colliders) {
             stand = self.walker.pos;
         }
-        let look_at = Vec3::new(front.x, if n.kind == Kind::Host { c.y.max(1.2) } else { c.y }, front.y);
-        let d = Vec2::new(look_at.x - stand.x, look_at.z - stand.y);
+        let d = Vec2::new(front.x - stand.x, front.y - stand.y);
         let heading = d.x.atan2(-d.y);
-        let pitch = (look_at.y - EYE).atan2(d.length().max(0.1)).clamp(-0.7, 0.6);
+        let pitch = (c.y - EYE).atan2(d.length().max(0.1)).clamp(-0.7, 1.2);
         let ms = if self.reduced_motion { 0.0 } else { GLIDE_MS };
         self.walker.glide_to(stand, heading, pitch, self.now, ms);
         self.sync_fps();
@@ -255,42 +261,95 @@ impl Engine {
 
     pub(crate) fn walk_update(&mut self, now: f64, dt: f32) {
         let changed = match self.layout.room.as_ref() {
-            Some(room) => self.walker.step(now, dt, &room.colliders),
+            Some(city) => self.walker.step(now, dt, &city.colliders),
             None => self.walker.step(now, dt, &[]),
         };
+        let beams_move = !self.reduced_motion && self.layout.room.as_ref().is_some_and(|c| c.beams.iter().any(|b| b.on));
         if changed || self.cam.fps.is_none() {
             self.sync_fps();
             self.dirty = true;
             self.walk_update_hover();
+        } else if beams_move && self.walker.keys == 0 {
+            // A sweeping beam can cross the crosshair.
+            self.walk_update_hover();
+        }
+    }
+
+    /// Searchlight beams for this frame (no allocation once the buffer has grown).
+    pub(crate) fn rebuild_dynamic(&mut self) {
+        self.dynamic.clear();
+        self.dynamic_version += 1;
+        let Some(city) = self.layout.room.as_ref() else { return };
+        for beam in city.beams.iter().filter(|b| b.on) {
+            let dir = beam_dir(beam, self.now, self.reduced_motion);
+            let len = 150.0;
+            let hovered = self.hovered == Some(beam.node) || self.selected == Some(beam.node);
+            let tint = if hovered { [1.0, 0.85, 0.55] } else { [0.75, 0.85, 1.0] };
+            let seg = 8;
+            for s in 0..seg {
+                let t0 = s as f32 / seg as f32;
+                let t1 = (s + 1) as f32 / seg as f32;
+                let a = beam.origin + dir * len * t0;
+                let b = beam.origin + dir * len * t1;
+                let fade = 1.0 - t0;
+                for (w, alpha) in [(3.0, 0.5), (14.0, 0.14), (40.0, 0.06)] {
+                    self.dynamic.line(a, b, rgba(tint, alpha * fade), w * (1.0 + t0 * 1.5), crate::geo::Lod::ALWAYS, GLOW);
+                }
+            }
         }
     }
 
     // ---- picking -----------------------------------------------------------------------
 
-    /// Deepest visible element under (x, y) within reach.
+    /// What the ray at (x, y) aims at: the most detailed visible element within reach,
+    /// a searchlight beam, or nothing (walls of the library and warehouse stop the ray).
     pub fn pick_walk(&self, x: f32, y: f32) -> Option<usize> {
         let (o, d) = self.cam.ray(x, y, self.css_w, self.css_h);
         let eye = self.cam.eye();
         let nodes = &self.layout.nodes;
-        let nearest = |cands: &[usize]| -> Option<(f32, usize)> {
+        let mut reach = REACH;
+        if let Some(city) = self.layout.room.as_ref() {
+            for b in &city.blockers {
+                if let Some(t) = b.ray_hit(o, d) {
+                    if !b.contains(eye) {
+                        reach = reach.min(t);
+                    }
+                }
+            }
+        }
+        let nearest = |cands: &[usize], reach: f32| -> Option<(f32, usize)> {
             let mut best: Option<(f32, usize)> = None;
             for &i in cands {
                 if nodes[i].lod.vis(eye) < 0.5 {
                     continue;
                 }
                 if let Some(t) = nodes[i].pick.ray_hit(o, d) {
-                    if t <= REACH && best.is_none_or(|(bt, _)| t < bt) {
+                    if t <= reach && best.is_none_or(|(bt, _)| t < bt) {
                         best = Some((t, i));
                     }
                 }
             }
             best
         };
-        let (_, mut cur) = nearest(&self.layout.roots)?;
-        while let Some((_, c)) = nearest(&nodes[cur].children) {
-            cur = c;
+        let mut found = nearest(&self.layout.roots, reach);
+        if let Some((_, mut cur)) = found {
+            while let Some((_, c)) = nearest(&nodes[cur].children, reach) {
+                cur = c;
+            }
+            found = found.map(|(t, _)| (t, cur));
         }
-        Some(cur)
+        // Searchlight beams: aim anywhere along the shaft.
+        if let Some(city) = self.layout.room.as_ref() {
+            for beam in city.beams.iter().filter(|b| b.on) {
+                let dir = beam_dir(beam, self.now, self.reduced_motion);
+                if let Some((t, dist)) = ray_segment(o, d, beam.origin, beam.origin + dir * 150.0) {
+                    if dist < 1.2 + t * 0.012 && found.is_none_or(|(ft, _)| t < ft) {
+                        found = Some((t, beam.node));
+                    }
+                }
+            }
+        }
+        found.map(|f| f.1)
     }
 
     pub(crate) fn walk_update_hover(&mut self) {
@@ -298,6 +357,20 @@ impl Engine {
         if h != self.hovered {
             self.hovered = h;
             self.dirty = true;
+        }
+    }
+
+    /// JSON `{ id, title, meaning }` for the crosshair target, or `null`.
+    pub fn aim_info_json(&self) -> String {
+        #[derive(Serialize)]
+        struct Aim<'a> {
+            id: &'a str,
+            title: &'a str,
+            meaning: &'a str,
+        }
+        match self.hovered.map(|i| &self.layout.nodes[i]) {
+            Some(n) => serde_json::to_string(&Aim { id: &n.id, title: if n.title.is_empty() { &n.text } else { &n.title }, meaning: &n.meaning }).unwrap_or_else(|_| "null".into()),
+            None => "null".into(),
         }
     }
 
@@ -310,32 +383,22 @@ impl Engine {
         i
     }
 
-    fn hidden_by_other_rack(&self, eye: Vec3, p: Vec3, own: usize) -> bool {
+    fn occluded(&self, eye: Vec3, p: Vec3, own: usize) -> bool {
         let d = p - eye;
         let len = d.length();
         if len < 1e-4 {
             return false;
         }
         let dir = d / len;
-        self.layout.hosts.iter().any(|&h| h != own && self.layout.nodes[h].body.ray_hit(eye, dir).is_some_and(|t| t < len - 0.02))
+        let blocked = |b: &crate::geo::Aabb| !b.contains(eye) && b.ray_hit(eye, dir).is_some_and(|t| t < len - 0.3);
+        self.layout.hosts.iter().any(|&h| h != own && blocked(&self.layout.nodes[h].body))
+            || self.layout.room.as_ref().is_some_and(|c| c.blockers.iter().any(|b| !b.contains(p) && blocked(b)))
     }
 
-    /// The group an element belongs to (itself for groups).
-    fn group_of(&self, i: usize) -> Option<usize> {
+    fn ancestor_of_kind(&self, i: usize, k: Kind) -> Option<usize> {
         let mut cur = Some(i);
         while let Some(c) = cur {
-            if self.layout.nodes[c].kind == Kind::Group {
-                return Some(c);
-            }
-            cur = self.layout.nodes[c].parent;
-        }
-        None
-    }
-
-    fn workload_of(&self, i: usize) -> Option<usize> {
-        let mut cur = Some(i);
-        while let Some(c) = cur {
-            if self.layout.nodes[c].kind == Kind::Workload {
+            if self.layout.nodes[c].kind == k {
                 return Some(c);
             }
             cur = self.layout.nodes[c].parent;
@@ -344,10 +407,10 @@ impl Engine {
     }
 
     pub(crate) fn labels_walk(&self) -> Vec<Label<'_>> {
-        // Close-up labels only for the unit / module you are looking at (or have selected).
+        // Window and image labels only for the floor / window you are aiming at (or selected).
         let aim = [self.hovered, self.selected];
-        let groups: [Option<usize>; 2] = aim.map(|a| a.and_then(|a| self.group_of(a)));
-        let workloads: [Option<usize>; 2] = aim.map(|a| a.and_then(|a| self.workload_of(a)));
+        let groups = aim.map(|a| a.and_then(|a| self.ancestor_of_kind(a, Kind::Group)));
+        let workloads = aim.map(|a| a.and_then(|a| self.ancestor_of_kind(a, Kind::Workload)));
         let vp = self.cam.view_proj();
         let eye = self.cam.eye();
         let px_per_m_at_w = self.css_h * 0.5 / (self.cam.fov() * 0.5).tan();
@@ -355,16 +418,22 @@ impl Engine {
         for (i, n) in self.layout.nodes.iter().enumerate() {
             let d = eye.distance(n.label_at);
             let special = Some(i) == self.selected || Some(i) == self.hovered;
-            let range = match n.kind {
-                Kind::Host => LABEL_RANGE + 1.5,
-                Kind::Group | Kind::External => LABEL_RANGE,
-                Kind::Workload | Kind::Image => CLOSE_RANGE,
+            let range = match (n.kind, n.kind_name.as_str()) {
+                (Kind::Host, _) => 140.0,
+                (Kind::Group, _) => 90.0,
+                (Kind::Workload, _) => 45.0,
+                (Kind::Image, _) => 12.0,
+                (_, "repository") => 0.0,
+                (_, "image") => 12.0,
+                (_, "domain") => 18.0,
+                (_, "lamp") | (_, "source") => 0.0,
+                _ => 60.0,
             };
-            if d > range && !(special && d < LABEL_RANGE) {
+            if d > range && !(special && d < 160.0) {
                 continue;
             }
-            // Labels on a face are only readable from the side that face looks at.
-            if n.kind != Kind::Host && (eye - n.label_at).dot(n.facing) <= 0.0 {
+            // Painted / mounted labels are only readable from the side they face.
+            if n.facing != Vec3::ZERO && (eye - n.label_at).dot(n.facing) <= 0.0 {
                 continue;
             }
             let clip = vp * n.label_at.extend(1.0);
@@ -380,24 +449,24 @@ impl Engine {
             let show = special
                 || match n.kind {
                     Kind::Host => true,
-                    Kind::Group => vis > 0.5 && px >= 11.0,
-                    Kind::Workload => vis > 0.6 && px >= 34.0 && groups.contains(&n.parent),
-                    Kind::Image => vis > 0.6 && px >= 26.0 && workloads.contains(&n.parent),
-                    Kind::External => px >= 34.0,
+                    Kind::Group => px >= 14.0,
+                    Kind::Workload => vis > 0.6 && px >= 22.0 && groups.contains(&n.parent),
+                    Kind::Image => vis > 0.6 && px >= 20.0 && workloads.contains(&n.parent),
+                    Kind::External => px >= 26.0,
                 };
             if !show {
                 continue;
             }
             let own = self.root_of(i);
-            if self.hidden_by_other_rack(eye, n.label_at, own) {
+            if self.occluded(eye, n.label_at, own) {
                 continue;
             }
             out.push(Label {
                 id: &n.id,
                 text: &n.text,
                 sub: &n.sub,
-                x: round2(((ndc.x * 0.5 + 0.5) * self.css_w * 10.0).round() / 10.0),
-                y: round2(((0.5 - ndc.y * 0.5) * self.css_h * 10.0).round() / 10.0),
+                x: ((ndc.x * 0.5 + 0.5) * self.css_w * 10.0).round() / 10.0,
+                y: ((0.5 - ndc.y * 0.5) * self.css_h * 10.0).round() / 10.0,
                 depth: ((ndc.z * 0.5 + 0.5) * 10000.0).round() / 10000.0,
                 level: n.level.as_str(),
                 kind: &n.kind_name,
@@ -405,8 +474,22 @@ impl Engine {
                 stale: n.stale,
                 selected: Some(i) == self.selected,
                 hovered: Some(i) == self.hovered,
+                meaning: &n.meaning,
             });
         }
+        // Declutter painted floor names: nearer ones win when two would overlap on screen.
+        out.sort_by(|a, b| a.depth.total_cmp(&b.depth));
+        let mut kept: Vec<(f32, f32)> = Vec::new();
+        out.retain(|l| {
+            if l.kind != "group" || l.selected || l.hovered {
+                return true;
+            }
+            if kept.iter().any(|&(x, y)| (l.y - y).abs() < 16.0 && (l.x - x).abs() < 140.0) {
+                return false;
+            }
+            kept.push((l.x, l.y));
+            true
+        });
         out.sort_by(|a, b| b.depth.total_cmp(&a.depth));
         out
     }
@@ -418,25 +501,50 @@ impl Engine {
             Mode::Walk => (Player { x: round2(self.walker.pos.x), z: round2(self.walker.pos.y), heading: round2(self.walker.heading) }, self.layout.bounds),
             Mode::Orbit => {
                 let p = self.cam.pose;
-                let h = -p.yaw;
-                (Player { x: round2(p.target.x), z: round2(p.target.z), heading: round2(h) }, self.layout.bounds.map(|b| b.grow(0.9)))
+                (Player { x: round2(p.target.x), z: round2(p.target.z), heading: round2(-p.yaw) }, self.layout.bounds.map(|b| b.grow(0.9)))
             }
         };
-        let b = bounds.unwrap_or(crate::geo::Aabb::new(Vec3::splat(-1.0), Vec3::splat(1.0)));
         let mut items = Vec::new();
+        let mut raw: Vec<(&str, &'static str, crate::geo::Aabb, &'static str)> = Vec::new();
         for &i in &self.layout.roots {
             let n = &self.layout.nodes[i];
-            let c = n.body.center();
-            let s = n.body.size();
-            items.push(Item { id: &n.id, kind: &n.kind_name, x: round2(c.x), z: round2(c.z), w: round2(s.x), d: round2(s.z), level: n.level.as_str() });
+            let kind: &'static str = match (self.mode, n.kind, n.kind_name.as_str()) {
+                (Mode::Orbit, Kind::Host, _) => "host",
+                (Mode::Walk, Kind::Host, _) => "building",
+                (Mode::Walk, _, "domain") => "door",
+                (Mode::Walk, _, "registry") => "crane",
+                (Mode::Walk, _, "lamp" | "repository" | "image" | "source") => continue,
+                (Mode::Walk, _, _) => "kiosk",
+                (Mode::Orbit, _, k) => match k {
+                    "repository" => "repository",
+                    "domain" => "domain",
+                    "registry" => "registry",
+                    "image" => "image",
+                    "host" => "host",
+                    "cluster" => "cluster",
+                    _ => "external",
+                },
+            };
+            raw.push((&n.id, kind, n.body, n.level.as_str()));
         }
-        if let Some(room) = &self.layout.room {
-            for (kind, f) in &room.furniture {
-                let c = f.center();
-                let s = f.size();
-                items.push(Item { id: "", kind, x: round2(c.x), z: round2(c.z), w: round2(s.x), d: round2(s.z), level: "unknown" });
+        if let Some(city) = &self.layout.room {
+            for (kind, f) in &city.furniture {
+                raw.push(("", kind, *f, "unknown"));
             }
         }
+        for (id, kind, b, level) in &raw {
+            let c = b.center();
+            let s = b.size();
+            items.push(Item { id, kind, x: round2(c.x), z: round2(c.z), w: round2(s.x), d: round2(s.z), level });
+        }
+        // Streets and squares first so buildings draw on top.
+        items.sort_by_key(|it| !matches!(it.kind, "square" | "quay" | "street"));
+        let b = bounds.unwrap_or(crate::geo::Aabb::new(Vec3::splat(-1.0), Vec3::splat(1.0)));
+        let b = match &self.layout.room {
+            // The minimap shows the walkable city, not the water and sky beyond it.
+            Some(c) => crate::geo::Aabb::new(Vec3::new(b.min.x, 0.0, b.min.z), Vec3::new(c.water_x + 4.0, 0.0, b.max.z)),
+            None => b,
+        };
         let m = Minimap {
             mode: self.mode_name(),
             player,
@@ -445,6 +553,22 @@ impl Engine {
         };
         serde_json::to_string(&m).unwrap_or_else(|_| "{}".into())
     }
+}
+
+/// Closest approach between a ray and a segment: (ray parameter, distance).
+fn ray_segment(o: Vec3, d: Vec3, a: Vec3, b: Vec3) -> Option<(f32, f32)> {
+    let u = b - a;
+    let w = o - a;
+    let (aa, bb, cc, dd, ee) = (d.dot(d), d.dot(u), u.dot(u), d.dot(w), u.dot(w));
+    let den = aa * cc - bb * bb;
+    if den.abs() < 1e-8 {
+        return None;
+    }
+    let t = ((bb * ee - cc * dd) / den).max(0.0);
+    let s = ((aa * ee - bb * dd) / den).clamp(0.0, 1.0);
+    let p = o + d * t;
+    let q = a + u * s;
+    Some((t, p.distance(q)))
 }
 
 #[cfg(test)]
@@ -470,39 +594,53 @@ mod tests {
     }
 
     #[test]
-    fn spawns_at_entrance_facing_the_racks() {
+    fn spawns_on_the_square_looking_down_the_street() {
         let e = walking();
         assert_eq!(e.mode_name(), "walk");
-        let room = e.layout.room.as_ref().unwrap();
-        assert!(e.walker.pos.y > room.bounds.max.z - 1.5);
-        // The rack is ahead of the player.
         let host = &e.layout.nodes[e.layout.hosts[0]];
         let to = host.body.center() - e.cam.eye();
-        assert!(to.normalize().dot(e.walker.forward()) > 0.8);
+        let f = e.walker.forward();
+        assert!(Vec2::new(to.x, to.z).normalize().dot(Vec2::new(f.x, f.z).normalize()) > 0.8);
         assert!((e.cam.eye().y - EYE).abs() < 0.05);
+        // Floor names and the building sign are readable from the square.
+        let labels = e.labels();
+        assert!(labels.iter().any(|l| l.kind == "host"));
+        assert!(labels.iter().any(|l| l.kind == "group" && !l.meaning.is_empty()), "{}", e.labels_json());
     }
 
     #[test]
-    fn walking_into_the_rack_stops_at_it_and_aims_at_it() {
+    fn walking_down_the_street_is_stopped_by_the_building() {
         let mut e = walking();
+        // Turn to face the building front (north) and run into it.
+        let host = e.layout.nodes[e.layout.hosts[0]].body;
+        e.walk_to(e.layout.hosts[0]);
+        run(&mut e, 1.5);
+        e.walker.heading = 0.0;
         e.key_down("KeyW");
         e.key_down("ShiftLeft");
-        run(&mut e, 5.0);
+        run(&mut e, 8.0);
         e.key_up("KeyW");
-        e.key_up("ShiftLeft");
         run(&mut e, 0.5);
-        let host = &e.layout.nodes[e.layout.hosts[0]];
-        assert!(e.walker.pos.y > host.body.max.z + walk::RADIUS - 0.01, "inside the rack at {}", e.walker.pos);
-        assert!(e.walker.pos.y < host.body.max.z + 0.6);
-        // Crosshair at eye height hits something in the rack.
-        let h = e.hovered.expect("aims at the rack");
-        assert_eq!(e.root_of(h), e.layout.hosts[0]);
-        e.key_down("KeyE");
-        assert_eq!(e.selected, Some(h));
-        // Close up: workload labels show, other racks' labels do not exist.
-        let labels = e.labels();
-        assert!(labels.iter().any(|l| l.kind == "workload"), "{}", e.labels_json());
-        assert!(labels.iter().all(|l| l.depth >= 0.0 && l.depth <= 1.0));
+        assert!(e.walker.pos.y > host.max.z + walk::RADIUS - 0.01, "walked into the building at {}", e.walker.pos);
+    }
+
+    #[test]
+    fn aim_info_names_the_thing_and_its_meaning() {
+        let mut e = walking();
+        assert_eq!(e.aim_info_json(), "null");
+        e.focus_id("wl:slowbloom/ghost/Deployment/ghost");
+        run(&mut e, 1.5);
+        let v: serde_json::Value = serde_json::from_str(&e.aim_info_json()).unwrap();
+        let id = v["id"].as_str().unwrap();
+        assert!(id.contains("ghost"), "aiming at {id}");
+        if id == "wl:slowbloom/ghost/Deployment/ghost" {
+            assert_eq!(v["title"], "ghost · ghost");
+            assert!(v["meaning"].as_str().unwrap().contains("window left open"));
+        }
+        e.interact();
+        assert!(e.selected.is_some());
+        // Window labels for the aimed floor show, with meanings.
+        assert!(e.labels().iter().any(|l| l.kind == "workload" && l.meaning.contains("window")), "{}", e.labels_json());
     }
 
     #[test]
@@ -521,44 +659,47 @@ mod tests {
         run(&mut e, 0.1);
         assert_eq!(e.cam.pose, pose);
         assert!(e.cam.eye().distance(eye) < 1e-4);
-        assert_eq!(e.mode_name(), "orbit");
         assert!(e.layout.room.is_none());
+        assert!(e.labels().iter().all(|l| l.meaning.is_empty()));
     }
 
     #[test]
-    fn minimap_reports_player_and_items() {
+    fn minimap_shows_the_city() {
         let mut e = walking();
         let v: serde_json::Value = serde_json::from_str(&e.minimap_json()).unwrap();
-        let x0 = v["player"]["x"].as_f64().unwrap();
-        let z0 = v["player"]["z"].as_f64().unwrap();
-        assert!(v["bounds"]["minX"].as_f64().unwrap() < x0 && x0 < v["bounds"]["maxX"].as_f64().unwrap());
         let items = v["items"].as_array().unwrap();
-        assert!(items.iter().any(|i| i["kind"] == "host" && i["id"] == "host:12"));
-        assert!(items.iter().any(|i| i["kind"] == "domain"));
-        assert!(items.iter().any(|i| i["kind"] == "door"));
+        for k in ["building", "library", "warehouse", "street", "door", "square"] {
+            assert!(items.iter().any(|i| i["kind"] == k), "no {k}");
+        }
+        assert!(items.iter().any(|i| i["kind"] == "building" && i["id"] == "host:12"));
+        let z0 = v["player"]["z"].as_f64().unwrap();
+        let x0 = v["player"]["x"].as_f64().unwrap();
         e.key_down("KeyW");
         run(&mut e, 1.0);
         let v: serde_json::Value = serde_json::from_str(&e.minimap_json()).unwrap();
-        assert!(v["player"]["z"].as_f64().unwrap() < z0 - 0.5);
-        assert!(v["player"]["heading"].as_f64().unwrap().abs() < 1e-3);
+        let (x1, z1) = (v["player"]["x"].as_f64().unwrap(), v["player"]["z"].as_f64().unwrap());
+        assert!(x1 > x0 + 0.8 && (z1 - z0).abs() < 0.5);
     }
 
     #[test]
-    fn focus_walks_up_to_the_element() {
+    fn searchlight_beams_are_aimable() {
         let mut e = walking();
-        let w = e.layout.index["wl:slowbloom/slowbloom/Deployment/api"];
-        e.focus_id("wl:slowbloom/slowbloom/Deployment/api");
-        run(&mut e, 1.5);
-        let wb = e.layout.nodes[w].body;
-        let eye = e.cam.eye();
-        assert!(eye.distance(wb.center()) < 2.4, "eye {eye} far from {}", wb.center());
-        assert_eq!(e.selected, Some(w));
-        assert_eq!(e.hovered.map(|h| e.root_of(h)), Some(e.layout.hosts[0]));
-        // Escape-equivalent from the page is not ours; reset_view walks back to the door.
-        e.reset_view();
-        run(&mut e, 1.5);
-        let room = e.layout.room.as_ref().unwrap();
-        assert!(e.walker.pos.distance(Vec2::new(room.spawn.x, room.spawn.z)) < 0.01);
+        let city = e.layout.room.as_ref().unwrap();
+        let beam = *city.beams.iter().find(|b| b.on).unwrap();
+        // Look straight along the beam from below its origin.
+        let dir = beam_dir(&beam, e.now, e.reduced_motion);
+        let target = beam.origin + dir * 40.0;
+        let to = target - e.cam.eye();
+        e.walker.heading = to.x.atan2(-to.z);
+        e.walker.pitch = (to.y / Vec2::new(to.x, to.z).length()).atan();
+        e.reduced_motion = true; // freeze the sweep
+        e.look(0.0, 0.0);
+        let h = e.hovered.map(|h| e.layout.nodes[h].id.clone());
+        assert!(h.as_deref().is_some_and(|id| id.starts_with("source:")), "aimed at {h:?}");
+        let v: serde_json::Value = serde_json::from_str(&e.aim_info_json()).unwrap();
+        assert!(v["meaning"].as_str().unwrap().contains("searchlight sweeping"));
+        run(&mut e, 0.2);
+        assert!(e.dynamic.line_count() > 0);
     }
 
     #[test]
@@ -574,8 +715,8 @@ mod tests {
         assert!(e.walker.pos.distance(p) < 1e-4);
         e.set_scene("{}").unwrap();
         run(&mut e, 0.1);
-        assert!(e.labels().is_empty());
         e.look(10.0, f32::NAN);
         e.interact();
+        let _ = e.minimap_json();
     }
 }

@@ -8,7 +8,7 @@ pub mod engine;
 mod engine_walk;
 pub mod geo;
 pub mod layout;
-pub mod room;
+pub mod city;
 pub mod walk;
 pub mod scene;
 
@@ -158,6 +158,11 @@ mod wasm {
         /// Walk mode: select what the crosshair aims at.
         pub fn interact(&mut self) {
             self.engine.interact();
+        }
+
+        /// Walk mode: `{ id, title, meaning }` for what the crosshair aims at, or `null`.
+        pub fn aim_info(&self) -> String {
+            self.engine.aim_info_json()
         }
 
         /// JSON floor plan with the player position for a 2D minimap.

@@ -16,6 +16,12 @@ uniform float uDpr;
 uniform float uTime;
 uniform float uMotion;
 uniform vec2 uFog;
+uniform float uWalk;
+uniform vec3 uFogColor;
+uniform vec3 uMoon;
+uniform vec4 uLightPos[48];
+uniform vec4 uLightCol[48];
+uniform int uLightCount;
 bool flag(float f, float bit) { return mod(floor(f / bit + 0.001), 2.0) >= 1.0; }
 float lodVis(vec3 anchor, float nearD, float farD) {
   float d = distance(uEye, anchor);
@@ -26,11 +32,36 @@ float lodVis(vec3 anchor, float nearD, float farD) {
 float blinkMul(float flags) {
   if (!flag(flags, 1.0)) return 1.0;
   if (uMotion < 0.5) return 0.5;
+  if (uWalk > 0.5) {
+    // Neon / bulb flicker: mostly on, with irregular drop-outs.
+    float t = uTime / 1000.0;
+    float f = sin(t * 13.0) * sin(t * 7.3 + 1.7) * sin(t * 2.1);
+    return f > 0.25 ? 0.15 : 1.0;
+  }
   return 0.22 + 0.78 * (0.5 + 0.5 * cos(uTime * 6.2831853 / 2600.0));
 }
 float fogMul(vec3 p) {
   float d = distance(uEye, p);
   return 1.0 - 0.82 * clamp((d - uFog.x) / max(uFog.y - uFog.x, 0.001), 0.0, 1.0);
+}
+float cityFog(vec3 p) {
+  float d = distance(uEye, p);
+  float f = clamp((d - uFog.x) / max(uFog.y - uFog.x, 0.001), 0.0, 1.0);
+  return f * (2.0 - f);
+}
+vec3 pointLights(vec3 p, vec3 n) {
+  vec3 acc = vec3(0.0);
+  for (int i = 0; i < 48; i++) {
+    if (i >= uLightCount) break;
+    vec3 L = uLightPos[i].xyz - p;
+    float d = length(L);
+    float r = uLightPos[i].w;
+    float att = 1.0 / (1.0 + d * d / (r * r * 0.12));
+    att *= 1.0 - smoothstep(r * 0.7, r * 1.5, d);
+    float lam = max(dot(n, L / max(d, 1e-4)), 0.0) * 0.85 + 0.15;
+    acc += uLightCol[i].rgb * uLightCol[i].w * att * lam;
+  }
+  return acc;
 }
 "#;
 
@@ -43,6 +74,7 @@ layout(location=4) in vec3 aAnchor;
 layout(location=5) in vec4 aParams; // near, far, flags, width (css px)
 uniform float uHidden;
 uniform float uAlpha;
+uniform float uLinePass; // 0 all, 1 ink (non-glow) only, 2 glow only
 out vec4 vColor;
 out float vSide;
 out float vHalf;
@@ -51,10 +83,12 @@ flat out float vDash;
 void main() {
   float vis = lodVis(aAnchor, aParams.x, aParams.y);
   float flags = aParams.z;
+  bool glow = flag(flags, 512.0);
   vec4 c0 = uVP * vec4(aP0, 1.0);
   vec4 c1 = uVP * vec4(aP1, 1.0);
   float eps = 1e-3;
-  if (vis < 0.004 || (uHidden > 0.5 && flag(flags, 16.0)) || (c0.w < eps && c1.w < eps)) {
+  if (vis < 0.004 || (uHidden > 0.5 && flag(flags, 16.0)) || (c0.w < eps && c1.w < eps)
+      || (uLinePass > 0.5 && uLinePass < 1.5 && glow) || (uLinePass > 1.5 && !glow)) {
     gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
     return;
   }
@@ -78,7 +112,9 @@ void main() {
   vAlong = vec2(along * c.w, c.w);
   vSide = aCorner.y * h;
   vHalf = w * 0.5;
-  float a = aColor.a * vis * blinkMul(flags) * fogMul(mix(aP0, aP1, aCorner.x)) * uAlpha;
+  vec3 mid = mix(aP0, aP1, aCorner.x);
+  float fog = uWalk > 0.5 ? 1.0 - 0.95 * cityFog(mid) : fogMul(mid);
+  float a = aColor.a * vis * blinkMul(flags) * fog * uAlpha;
   if (wpx < 1.0) a *= wpx;
   vColor = vec4(aColor.rgb, a);
   vDash = (flag(flags, 2.0) || uHidden > 0.5) ? 1.0 : 0.0;
@@ -115,7 +151,8 @@ layout(location=6) in vec3 aParams; // near, far, flags
 uniform float uDepthOnly;
 out vec4 vColor;
 out vec3 vWorld;
-flat out float vHatch;
+out vec3 vNormal;
+flat out float vFlags;
 void main() {
   float vis = lodVis(aAnchor, aParams.x, aParams.y);
   float flags = aParams.z;
@@ -126,28 +163,51 @@ void main() {
   }
   vec3 p = aMin + aPos * aSize;
   vWorld = p;
+  vNormal = aNormal;
+  vFlags = flags;
   gl_Position = uVP * vec4(p, 1.0);
-  float shade = 0.7 + 0.3 * max(dot(aNormal, normalize(vec3(0.25, 1.0, 0.55))), 0.0);
-  vColor = vec4(aColor.rgb * shade, aColor.a * vis * blinkMul(flags) * fogMul(p));
-  vHatch = flag(flags, 8.0) ? 1.0 : 0.0;
+  float b = blinkMul(flags);
+  // Emissive surfaces flicker in brightness, everything else in opacity.
+  vColor = flag(flags, 64.0) ? vec4(aColor.rgb * b, aColor.a * vis) : vec4(aColor.rgb, aColor.a * vis * b);
 }
 "#;
 
 const FACE_FS: &str = r#"
 in vec4 vColor;
 in vec3 vWorld;
-flat in float vHatch;
+in vec3 vNormal;
+flat in float vFlags;
 out vec4 outColor;
 void main() {
-  if (vHatch > 0.5) {
+  vec3 n = normalize(vNormal);
+  if (flag(vFlags, 8.0)) {
     float v = (vWorld.x + vWorld.y) / 0.009;
     float f = abs(fract(v) - 0.5);
     float aa = fwidth(v) * 0.75;
     float stripe = 1.0 - smoothstep(0.12 - aa, 0.12 + aa, f);
-    outColor = vec4(1.0, 0.54, 0.24, (0.04 + 0.28 * stripe) * vColor.a);
+    outColor = vec4(1.0, 0.54, 0.24, (0.04 + 0.28 * stripe) * vColor.a * fogMul(vWorld));
     return;
   }
-  outColor = vColor;
+  if (uWalk > 0.5) {
+    vec3 col;
+    if (flag(vFlags, 64.0)) {
+      col = vColor.rgb;
+    } else {
+      float moon = max(dot(n, uMoon), 0.0);
+      vec3 amb = vec3(0.16, 0.18, 0.24) * (0.75 + 0.25 * n.y);
+      vec3 pl = pointLights(vWorld, n);
+      pl = pl / (1.0 + pl * 0.6);
+      col = vColor.rgb * (amb + vec3(0.42, 0.48, 0.62) * moon) + vColor.rgb * pl * 1.6;
+      // Faint height gradient: street level picks up the glow of the city.
+      col += vec3(0.010, 0.008, 0.006) * (1.0 - smoothstep(0.0, 12.0, vWorld.y));
+    }
+    float f = cityFog(vWorld);
+    col = mix(col, uFogColor, f * (flag(vFlags, 64.0) ? 0.75 : 1.0));
+    outColor = vec4(col, vColor.a);
+    return;
+  }
+  float shade = 0.7 + 0.3 * max(dot(n, normalize(vec3(0.25, 1.0, 0.55))), 0.0);
+  outColor = vec4(vColor.rgb * shade, vColor.a * fogMul(vWorld));
 }
 "#;
 
@@ -157,30 +217,56 @@ layout(location=1) in vec4 aCenterSize;
 layout(location=2) in vec4 aColor;
 layout(location=3) in vec3 aAnchor;
 layout(location=4) in vec4 aParams; // near, far, flags, min px
+layout(location=5) in float aPhase;
 uniform float uProjY;
 out vec4 vColor;
 out vec2 vUv;
 out float vPx;
-flat out float vAlert;
+flat out float vKind; // 0 led, 1 alert led, 2 fire, 3 smoke
 void main() {
   float vis = lodVis(aAnchor, aParams.x, aParams.y);
+  vec3 center = aCenterSize.xyz;
+  float size = aCenterSize.w;
+  vec3 col = aColor.rgb;
+  float k = 1.0;
+  float kind = flag(aParams.z, 32.0) ? 1.0 : 0.0;
+  bool fire = flag(aParams.z, 128.0);
+  bool smoke = flag(aParams.z, 256.0);
+  if (fire || smoke) {
+    float period = fire ? 1100.0 : 4200.0;
+    float t = uMotion > 0.5 ? fract(uTime / period + aPhase) : fract(aPhase * 0.83 + 0.1);
+    if (fire) {
+      center.y += t * size * 2.4;
+      center.x += sin(aPhase * 40.0 + t * 7.0) * size * 0.25;
+      size *= 1.0 - 0.6 * t;
+      col = mix(vec3(1.0, 0.86, 0.4), vec3(1.0, 0.22, 0.04), t);
+      k = (1.0 - t) * smoothstep(0.0, 0.12, t) * 1.4;
+      kind = 2.0;
+    } else {
+      center.y += t * size * 5.5;
+      center.x += sin(aPhase * 20.0 + t * 2.5) * size * 0.9;
+      size *= 1.0 + 2.4 * t;
+      k = sin(3.14159 * t) * 0.7;
+      kind = 3.0;
+    }
+  }
   // Lift the sprite towards the eye so its halo is not clipped by the panel it sits on.
-  vec3 toEye = uEye - aCenterSize.xyz;
-  vec3 lifted = aCenterSize.xyz + normalize(toEye) * min(aCenterSize.w * 3.0, length(toEye) * 0.5);
+  vec3 toEye = uEye - center;
+  vec3 lifted = center + normalize(toEye) * min(size * (kind > 1.5 ? 0.5 : 3.0), length(toEye) * 0.5);
   vec4 c = uVP * vec4(lifted, 1.0);
-  if (vis < 0.004 || c.w < 1e-3) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }
+  if (vis < 0.004 || c.w < 1e-3 || k <= 0.0) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }
   float pxPerWorld = uViewport.y * 0.5 * uProjY / c.w;
-  float sizePx = max(aCenterSize.w * pxPerWorld, aParams.w * uDpr);
-  bool alert = flag(aParams.z, 32.0);
-  float r = sizePx * (alert ? 3.6 : 2.6) + 2.0;
+  float sizePx = max(size * pxPerWorld, aParams.w * uDpr);
+  float r = kind > 1.5 ? sizePx * 1.7 + 1.0 : sizePx * (kind > 0.5 ? 3.6 : 2.6) + 2.0;
   c.xy += aCorner * r / (0.5 * uViewport) * c.w;
   gl_Position = c;
   vUv = aCorner * r / sizePx;
   vPx = sizePx;
-  vAlert = alert ? 1.0 : 0.0;
+  vKind = kind;
   float pulse = 1.0;
-  if (alert && uMotion > 0.5) pulse = 0.8 + 0.2 * sin(uTime * 6.2831853 / 1800.0);
-  vColor = vec4(aColor.rgb, vis * blinkMul(aParams.z) * fogMul(aCenterSize.xyz) * pulse);
+  if (kind == 1.0 && uMotion > 0.5) pulse = 0.8 + 0.2 * sin(uTime * 6.2831853 / 1800.0);
+  float fog = uWalk > 0.5 ? 1.0 - 0.9 * cityFog(center) : fogMul(center);
+  vColor = vec4(col, vis * blinkMul(aParams.z) * fog * pulse * k);
 }
 "#;
 
@@ -188,17 +274,30 @@ const LED_FS: &str = r#"
 in vec4 vColor;
 in vec2 vUv;
 in float vPx;
-flat in float vAlert;
+flat in float vKind;
 out vec4 outColor;
 void main() {
-  // Rounded-square core with a soft halo.
+  // Premultiplied output: alpha 0 = additive glow, alpha > 0 = covers what is behind (smoke).
+  if (vKind > 2.5) {
+    float a = exp(-dot(vUv, vUv) * 2.2) * vColor.a;
+    outColor = vec4(vec3(0.05, 0.05, 0.055) * a, a * 0.85);
+    return;
+  }
+  if (vKind > 1.5) {
+    float a = exp(-dot(vUv, vUv) * 2.6) * vColor.a;
+    outColor = vec4(vColor.rgb * a, 0.0);
+    return;
+  }
   vec2 q = abs(vUv) - vec2(0.32);
   float d = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - 0.18;
   float core = 1.0 - smoothstep(-1.0 / vPx, 1.0 / vPx, d);
+  // In the city, big lamps are soft glows rather than LED squares.
+  if (uWalk > 0.5) core *= 1.0 - smoothstep(8.0, 22.0, vPx);
   float r2 = dot(vUv, vUv);
-  float halo = exp(-r2 * (vAlert > 0.5 ? 0.45 : 0.9)) * (vAlert > 0.5 ? 0.6 : 0.32);
+  float alert = vKind > 0.5 ? 1.0 : 0.0;
+  float halo = exp(-r2 * mix(0.9, 0.45, alert)) * mix(0.32, 0.6, alert);
   vec3 col = vColor.rgb * halo + mix(vColor.rgb, vec3(1.0), 0.18) * core * 0.9;
-  outColor = vec4(col * vColor.a, 1.0);
+  outColor = vec4(col * vColor.a, 0.0);
 }
 "#;
 
@@ -214,9 +313,7 @@ void main() {
 const BG_FS: &str = r#"
 uniform mat4 uInvVP;
 uniform vec4 uScene; // center xz, radius, unused
-uniform float uWalk;
-uniform vec3 uRoomMin;
-uniform vec3 uRoomMax;
+uniform float uWaterX;
 in vec2 vNdc;
 out vec4 outColor;
 float grid(vec2 p, float s, float w) {
@@ -227,43 +324,70 @@ float grid(vec2 p, float s, float w) {
   float fade = 1.0 - smoothstep(0.12, 0.45, max(fw.x, fw.y));
   return (1.0 - min(l / w, 1.0)) * fade;
 }
-// Light pools under the ceiling fixtures (same 2.4 m grid as room.rs).
-float pool(vec2 p, float r) {
-  vec2 d = (fract((p - uRoomMin.xz) / 2.4) - 0.5) * 2.4 * vec2(0.55, 1.0);
-  return exp(-dot(d, d) / r);
+float hash2(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float vnoise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash2(i), hash2(i + vec2(1, 0)), u.x), mix(hash2(i + vec2(0, 1)), hash2(i + vec2(1, 1)), u.x), u.y);
 }
-vec3 room(vec3 dir) {
-  vec3 tA = (uRoomMin - uEye) / dir;
-  vec3 tB = (uRoomMax - uEye) / dir;
-  vec3 tf = max(tA, tB);
-  float t = min(min(tf.x, tf.y), tf.z);
-  vec3 hit = uEye + dir * t;
-  vec3 col;
-  if (t == tf.y && dir.y < 0.0) {
-    // Raised floor: 600 mm tiles, light pools, a glow band under the rack fronts.
-    col = vec3(0.035, 0.075, 0.130);
-    col += vec3(0.07, 0.15, 0.24) * pool(hit.xz, 1.6);
-    float tile = grid(hit.xz - uRoomMin.xz, 0.6, 1.3);
-    col += vec3(0.25, 0.55, 0.85) * tile * 0.28;
-    float fine = grid(hit.xz - uRoomMin.xz + 0.3, 0.6, 0.6);
-    col += vec3(0.20, 0.45, 0.70) * fine * 0.04;
-  } else if (t == tf.y) {
-    // Ceiling: dim tiles, glow around fixtures.
-    col = vec3(0.022, 0.045, 0.085);
-    col += vec3(0.12, 0.22, 0.32) * pool(hit.xz, 0.5);
-    col += vec3(0.20, 0.40, 0.65) * grid(hit.xz - uRoomMin.xz, 0.6, 1.0) * 0.10;
-  } else {
-    // Walls: panel joints every 1.2 m, brighter towards the light.
-    vec2 w = t == tf.x ? hit.zy : hit.xy;
-    col = mix(vec3(0.030, 0.062, 0.110), vec3(0.042, 0.085, 0.145), smoothstep(0.0, 3.0, hit.y));
-    vec2 q = w / vec2(1.2, 1.2);
-    vec2 fw = fwidth(q);
-    vec2 g = abs(fract(q - 0.5) - 0.5) / max(fw, vec2(1e-5));
-    col += vec3(0.20, 0.42, 0.65) * (1.0 - min(g.x / 1.0, 1.0)) * 0.12;
-    col += vec3(0.25, 0.55, 0.85) * (1.0 - min(abs(hit.y - 0.12) / max(fwidth(hit.y), 1e-5), 1.0)) * 0.18;
+vec3 city(vec3 dir) {
+  vec3 sky = mix(uFogColor * 1.1, vec3(0.006, 0.009, 0.022), smoothstep(-0.02, 0.5, dir.y));
+  float md = max(dot(dir, uMoon), 0.0);
+  sky += vec3(0.92, 0.94, 1.0) * smoothstep(0.99955, 0.99975, md);
+  sky += vec3(0.30, 0.36, 0.5) * pow(md, 90.0) * 0.6 + vec3(0.10, 0.12, 0.18) * pow(md, 8.0) * 0.35;
+  if (dir.y > 0.04) {
+    vec3 q = floor(dir * 260.0);
+    float h = fract(sin(dot(q, vec3(12.9898, 78.233, 45.164))) * 43758.5453);
+    sky += vec3(0.55, 0.6, 0.75) * step(0.9982, h) * smoothstep(0.04, 0.3, dir.y) * (1.0 - smoothstep(0.995, 1.0, md));
+    // Thin moonlit cloud bands.
+    float cl = vnoise(dir.xz / max(dir.y, 0.05) * 1.6 + vec2(uTime * 0.00001 * uMotion, 0.0));
+    sky += vec3(0.05, 0.06, 0.085) * smoothstep(0.55, 0.85, cl) * (0.4 + pow(md, 4.0)) * smoothstep(0.04, 0.25, dir.y);
   }
-  float fogK = clamp((t - uFog.x) / max(uFog.y - uFog.x, 0.001), 0.0, 1.0);
-  return mix(col, vec3(0.018, 0.038, 0.070), fogK * 0.8);
+  if (dir.y >= -1e-4) return sky;
+  float t = -uEye.y / dir.y;
+  vec3 P = uEye + dir * t;
+  bool water = P.x > uWaterX;
+  float plane = 0.0;
+  if (water) {
+    plane = -0.9;
+    t = (uEye.y - plane) / (-dir.y);
+    P = uEye + dir * t;
+  }
+  float eyeH = uEye.y - plane;
+  vec3 col = water ? vec3(0.008, 0.014, 0.024) : vec3(0.026, 0.027, 0.033);
+  float n = vnoise(P.xz * 0.3) * 0.6 + vnoise(P.xz * 1.4) * 0.4;
+  float wet = water ? 1.0 : smoothstep(0.38, 0.62, n);
+  if (!water) col *= mix(1.0, 0.7, wet);
+  float ripple = water ? (vnoise(P.xz * vec2(0.6, 2.5) + vec2(0.0, uTime * 0.0004 * uMotion)) - 0.5) : 0.0;
+  for (int i = 0; i < 48; i++) {
+    if (i >= uLightCount) break;
+    vec3 L = uLightPos[i].xyz;
+    vec3 lc = uLightCol[i].rgb * uLightCol[i].w;
+    float ly = L.y - plane;
+    vec2 Q = uEye.xz + (L.xz - uEye.xz) * (eyeH / (eyeH + ly));
+    vec2 rad = Q - uEye.xz;
+    float rl = length(rad);
+    rad = rl > 1e-3 ? rad / rl : vec2(1.0, 0.0);
+    vec2 dq = P.xz - Q;
+    float along = dot(dq, rad);
+    float perp = dot(dq, vec2(-rad.y, rad.x)) + ripple * (0.6 + 0.04 * rl);
+    float sw = 0.10 + 0.012 * rl;
+    float sl = 0.9 + 0.22 * rl;
+    float streak = exp(-perp * perp / (sw * sw) - along * along / (sl * sl));
+    vec2 dl = P.xz - L.xz;
+    float r = uLightPos[i].w;
+    float pool = water ? 0.0 : exp(-dot(dl, dl) / (r * r * 0.12)) * exp(-L.y / r);
+    float high = 1.0 / (1.0 + max(L.y - 5.0, 0.0) * 0.3);
+    col += lc * (streak * (0.15 + 0.85 * wet) * 0.6 * high + pool * 0.22);
+  }
+  vec3 R = vec3(dir.x, -dir.y, dir.z);
+  R.x += ripple * 0.05;
+  float mr = max(dot(normalize(R), uMoon), 0.0);
+  col += vec3(0.7, 0.75, 0.9) * pow(mr, water ? 180.0 : 900.0) * wet * (water ? 0.8 : 0.35);
+  col += vec3(0.04, 0.05, 0.07) * pow(mr, 8.0) * wet * 0.4;
+  col = col / (1.0 + col * 0.7);
+  return mix(col, uFogColor, cityFog(P));
 }
 void main() {
   if (uWalk > 0.5) {
@@ -273,9 +397,9 @@ void main() {
     if (abs(dir.x) < 1e-5) dir.x = 1e-5;
     if (abs(dir.y) < 1e-5) dir.y = -1e-5;
     if (abs(dir.z) < 1e-5) dir.z = 1e-5;
-    vec3 col = room(dir);
+    vec3 col = city(dir);
     vec2 v = vNdc * vec2(0.9, 1.0);
-    col *= 1.0 - 0.4 * smoothstep(0.5, 1.6, dot(v, v));
+    col *= 1.0 - 0.45 * smoothstep(0.4, 1.7, dot(v, v));
     outColor = vec4(col, 1.0);
     return;
   }
@@ -324,10 +448,13 @@ impl Prog {
     }
 }
 
-const UNIFORMS: [&str; 16] = [
-    "uVP", "uEye", "uViewport", "uDpr", "uTime", "uMotion", "uFog", "uHidden", "uAlpha", "uDepthOnly", "uProjY", "uInvVP", "uScene", "uWalk", "uRoomMin",
-    "uRoomMax",
+const UNIFORMS: [&str; 21] = [
+    "uVP", "uEye", "uViewport", "uDpr", "uTime", "uMotion", "uFog", "uHidden", "uAlpha", "uDepthOnly", "uProjY", "uInvVP", "uScene", "uWalk", "uFogColor",
+    "uMoon", "uLightPos", "uLightCol", "uLightCount", "uWaterX", "uLinePass",
 ];
+
+pub const MOON: [f32; 3] = [0.70, 0.36, -0.62];
+const FOG_COLOR: [f32; 3] = [0.050, 0.064, 0.092];
 
 struct Batch {
     vao: WebGlVertexArrayObject,
@@ -347,9 +474,14 @@ pub struct Renderer {
     faces: Batch,
     leds: Batch,
     highlight: Batch,
+    dynamic: Batch,
     geo_version: u64,
     hl_version: u64,
+    dyn_version: u64,
     vp: [f32; 16],
+    light_pos: Vec<f32>,
+    light_col: Vec<f32>,
+    light_count: i32,
 }
 
 fn compile(gl: &GL, kind: u32, src: &str) -> Result<WebGlShader, String> {
@@ -364,7 +496,7 @@ fn compile(gl: &GL, kind: u32, src: &str) -> Result<WebGlShader, String> {
 }
 
 fn program(gl: &GL, vs: &str, fs: &str) -> Result<Prog, String> {
-    let head = "#version 300 es\nprecision highp float;\n";
+    let head = "#version 300 es\nprecision highp float;\nprecision highp int;\n";
     let v = compile(gl, GL::VERTEX_SHADER, &format!("{head}{COMMON}{vs}"))?;
     let f = compile(gl, GL::FRAGMENT_SHADER, &format!("{head}{COMMON}{fs}"))?;
     let p = gl.create_program().ok_or("cannot create program")?;
@@ -455,9 +587,10 @@ impl Renderer {
         let line_attrs = [(1, 3, 0), (2, 3, 3), (3, 4, 6), (4, 3, 10), (5, 4, 13)];
         let lines = batch(&gl, &quad, &[(0, 2, 0)], 2, &line_attrs, LINE_STRIDE)?;
         let highlight = batch(&gl, &quad, &[(0, 2, 0)], 2, &line_attrs, LINE_STRIDE)?;
+        let dynamic = batch(&gl, &quad, &[(0, 2, 0)], 2, &line_attrs, LINE_STRIDE)?;
         let faces = batch(&gl, &cube(), &[(0, 3, 0), (1, 3, 3)], 6, &[(2, 3, 0), (3, 3, 3), (4, 4, 6), (5, 3, 10), (6, 3, 13)], FACE_STRIDE)?;
         let sq: [f32; 12] = [-1., -1., 1., -1., 1., 1., -1., -1., 1., 1., -1., 1.];
-        let leds = batch(&gl, &sq, &[(0, 2, 0)], 2, &[(1, 4, 0), (2, 4, 4), (3, 3, 8), (4, 4, 11)], LED_STRIDE)?;
+        let leds = batch(&gl, &sq, &[(0, 2, 0)], 2, &[(1, 4, 0), (2, 4, 4), (3, 3, 8), (4, 4, 11), (5, 1, 15)], LED_STRIDE)?;
 
         Ok(Renderer {
             gl,
@@ -471,9 +604,14 @@ impl Renderer {
             faces,
             leds,
             highlight,
+            dynamic,
             geo_version: u64::MAX,
             hl_version: u64::MAX,
+            dyn_version: u64::MAX,
             vp: [0.0; 16],
+            light_pos: vec![0.0; 48 * 4],
+            light_col: vec![0.0; 48 * 4],
+            light_count: 0,
         })
     }
 
@@ -505,6 +643,19 @@ impl Renderer {
         let r = e.layout.bounds.map(|b| b.radius()).unwrap_or(2.0);
         let (f0, f1) = e.cam.fog(r);
         gl.uniform2f(p.loc("uFog"), f0, f1);
+        let city = e.layout.room.is_some();
+        gl.uniform1f(p.loc("uWalk"), if city { 1.0 } else { 0.0 });
+        if city {
+            gl.uniform3f(p.loc("uFogColor"), FOG_COLOR[0], FOG_COLOR[1], FOG_COLOR[2]);
+            gl.uniform3f(p.loc("uMoon"), MOON[0], MOON[1], MOON[2]);
+            gl.uniform1i(p.loc("uLightCount"), self.light_count);
+            if self.light_count > 0 {
+                gl.uniform4fv_with_f32_array(p.loc("uLightPos"), &self.light_pos);
+                gl.uniform4fv_with_f32_array(p.loc("uLightCol"), &self.light_col);
+            }
+        } else {
+            gl.uniform1i(p.loc("uLightCount"), 0);
+        }
     }
 
     pub fn draw(&mut self, e: &Engine) {
@@ -518,6 +669,19 @@ impl Renderer {
             self.lines.count = g.line_count() as i32;
             self.faces.count = g.face_count() as i32;
             self.leds.count = g.led_count() as i32;
+            self.light_count = 0;
+            if let Some(city) = e.layout.room.as_ref() {
+                for (i, l) in city.lights.iter().take(48).enumerate() {
+                    self.light_pos[i * 4..i * 4 + 4].copy_from_slice(&l[0..4]);
+                    self.light_col[i * 4..i * 4 + 4].copy_from_slice(&l[4..8]);
+                    self.light_count = i as i32 + 1;
+                }
+            }
+        }
+        if self.dyn_version != e.dynamic_version {
+            self.dyn_version = e.dynamic_version;
+            upload(gl, &self.dynamic.buf, &e.dynamic.lines, GL::DYNAMIC_DRAW);
+            self.dynamic.count = e.dynamic.line_count() as i32;
         }
         if self.hl_version != e.highlight_version {
             self.hl_version = e.highlight_version;
@@ -532,7 +696,12 @@ impl Renderer {
         let vp = self.vp;
         gl.depth_mask(true);
         gl.color_mask(true, true, true, true);
-        gl.clear_color(0.03, 0.06, 0.11, 1.0);
+        let city = e.layout.room.is_some();
+        if city {
+            gl.clear_color(FOG_COLOR[0], FOG_COLOR[1], FOG_COLOR[2], 1.0);
+        } else {
+            gl.clear_color(0.03, 0.06, 0.11, 1.0);
+        }
         gl.clear(GL::COLOR_BUFFER_BIT | GL::DEPTH_BUFFER_BIT);
 
         // 1. Background + floor grid.
@@ -543,14 +712,8 @@ impl Renderer {
         gl.uniform_matrix4fv_with_f32_array(self.bg.loc("uInvVP"), false, &inv);
         let (c, r) = e.layout.bounds.map(|b| (b.center(), b.radius())).unwrap_or((glam::Vec3::ZERO, 3.0));
         gl.uniform4f(self.bg.loc("uScene"), c.x, c.z, r * 1.2, 0.0);
-        match e.layout.room.as_ref() {
-            Some(room) => {
-                let (a, b) = (room.bounds.min, room.bounds.max);
-                gl.uniform1f(self.bg.loc("uWalk"), 1.0);
-                gl.uniform3f(self.bg.loc("uRoomMin"), a.x, a.y, a.z);
-                gl.uniform3f(self.bg.loc("uRoomMax"), b.x, b.y, b.z);
-            }
-            None => gl.uniform1f(self.bg.loc("uWalk"), 0.0),
+        if let Some(c) = e.layout.room.as_ref() {
+            gl.uniform1f(self.bg.loc("uWaterX"), c.water_x);
         }
         gl.bind_vertex_array(Some(&self.bg_vao));
         gl.draw_arrays(GL::TRIANGLES, 0, 3);
@@ -580,10 +743,25 @@ impl Renderer {
         gl.enable(GL::BLEND);
         gl.blend_func(GL::SRC_ALPHA, GL::ONE);
 
-        // 4. Lines: hidden (dashed, faint) then visible.
-        if self.lines.count > 0 {
+        // 4. City: ink lines, then glowing ones (neon, keys, cracked glass) added on top.
+        if city && self.lines.count > 0 {
             self.common(&self.line, e, &vp);
             gl.bind_vertex_array(Some(&self.lines.vao));
+            gl.depth_func(GL::LEQUAL);
+            gl.uniform1f(self.line.loc("uHidden"), 0.0);
+            gl.uniform1f(self.line.loc("uAlpha"), 1.0);
+            gl.blend_func(GL::SRC_ALPHA, GL::ONE_MINUS_SRC_ALPHA);
+            gl.uniform1f(self.line.loc("uLinePass"), 1.0);
+            gl.draw_arrays_instanced(GL::TRIANGLES, 0, 6, self.lines.count);
+            gl.blend_func(GL::SRC_ALPHA, GL::ONE);
+            gl.uniform1f(self.line.loc("uLinePass"), 2.0);
+            gl.draw_arrays_instanced(GL::TRIANGLES, 0, 6, self.lines.count);
+        }
+        // 4. Blueprint lines: hidden (dashed, faint) then visible.
+        if !city && self.lines.count > 0 {
+            self.common(&self.line, e, &vp);
+            gl.bind_vertex_array(Some(&self.lines.vao));
+            gl.uniform1f(self.line.loc("uLinePass"), 0.0);
             gl.depth_func(GL::GREATER);
             gl.uniform1f(self.line.loc("uHidden"), 1.0);
             gl.uniform1f(self.line.loc("uAlpha"), 0.16);
@@ -599,9 +777,20 @@ impl Renderer {
             self.common(&self.led, e, &vp);
             let proj = e.cam.proj();
             gl.uniform1f(self.led.loc("uProjY"), proj.y_axis.y);
-            gl.blend_func(GL::ONE, GL::ONE);
+            gl.blend_func(GL::ONE, GL::ONE_MINUS_SRC_ALPHA);
             gl.bind_vertex_array(Some(&self.leds.vao));
             gl.draw_arrays_instanced(GL::TRIANGLES, 0, 6, self.leds.count);
+        }
+
+        // 5b. Searchlight beams (additive, behind buildings).
+        if city && self.dynamic.count > 0 {
+            self.common(&self.line, e, &vp);
+            gl.blend_func(GL::SRC_ALPHA, GL::ONE);
+            gl.uniform1f(self.line.loc("uHidden"), 0.0);
+            gl.uniform1f(self.line.loc("uAlpha"), 1.0);
+            gl.uniform1f(self.line.loc("uLinePass"), 0.0);
+            gl.bind_vertex_array(Some(&self.dynamic.vao));
+            gl.draw_arrays_instanced(GL::TRIANGLES, 0, 6, self.dynamic.count);
         }
 
         // 6. Hover / selection outlines on top of everything.
@@ -611,6 +800,7 @@ impl Renderer {
             self.common(&self.line, e, &vp);
             gl.uniform1f(self.line.loc("uHidden"), 0.0);
             gl.uniform1f(self.line.loc("uAlpha"), 1.0);
+            gl.uniform1f(self.line.loc("uLinePass"), 0.0);
             gl.bind_vertex_array(Some(&self.highlight.vao));
             gl.draw_arrays_instanced(GL::TRIANGLES, 0, 6, self.highlight.count);
         }

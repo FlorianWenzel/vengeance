@@ -6,19 +6,22 @@ import path from 'node:path';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(path.join(here, '../../e2e/package.json'));
 const { chromium } = require('@playwright/test');
-const out = process.argv[2] || '/tmp/blueprint-walk';
+const out = process.argv[2] || '/tmp/blueprint-city';
 const base = process.env.BASE || 'http://localhost:8765/viz/demo/';
 // Each shot: [name, scene, steps]; a step is ['key', code, ms] | ['look', dx, dy] | ['focus', id] | ['wait', ms] | ['interact']
 const shots = [
-  ['entrance', '', []],
-  ['approach', '', [['key', 'KeyW', 1100]]],
-  ['rack-close', '', [['focus', 'ns:slowbloom/slowbloom'], ['wait', 1300]]],
-  ['workload-close', '', [['focus', 'wl:slowbloom/slowbloom/Deployment/api'], ['wait', 1300], ['interact']]],
-  ['library', '', [['look', -330, 60], ['key', 'KeyW', 400]]],
-  ['uplinks', '', [['key', 'KeyW', 900], ['look', 260, -40]]],
-  ['looking-back', '', [['key', 'KeyW', 1400], ['key', 'KeyD', 900], ['look', 700, 0]]],
-  ['many-rows', 'many-hosts.json', [['key', 'KeyD', 800], ['key', 'KeyW', 900], ['look', -120, 0]]],
-  ['many-aisle', 'many-hosts.json', [['key', 'KeyA', 1300], ['key', 'KeyW', 2600], ['look', 480, 0], ['key', 'KeyW', 1500]]],
+  ['city-arrival', '', []],
+  ['city-street', '', [['key', 'KeyW', 2500], ['look', -60, -40]]],
+  ['city-facade-ghost', '', [['focus', 'wl:slowbloom/ghost/Deployment/ghost'], ['wait', 1300]]],
+  ['city-facade-slowbloom', '', [['focus', 'wl:slowbloom/slowbloom/Deployment/api'], ['wait', 1300]]],
+  ['city-doors', '', [['focus', 'asset:7'], ['wait', 1300], ['key', 'KeyS', 900]]],
+  ['city-library', '', [['focus', 'asset:5'], ['wait', 1300], ['key', 'KeyS', 3800], ['look', 0, 60]]],
+  ['city-library-books', '', [['focus', 'asset:5'], ['wait', 1300]]],
+  ['city-harbour', '', [['focus', 'asset:10'], ['wait', 1300], ['look', -260, 90]]],
+  ['city-crate-fire', '', [['focus', 'img:152'], ['wait', 1300]]],
+  ['city-searchlight', '', [['look', 120, -520], ['wait', 300]]],
+  ['city-square-door', '', [['focus', 'asset:11'], ['wait', 1300], ['key', 'KeyS', 600]]],
+  ['city-many', 'many-hosts.json', [['key', 'KeyW', 3500], ['look', 80, -60]]],
 ];
 const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
 const page = await browser.newPage({ viewport: { width: 1400, height: 860 }, deviceScaleFactor: 2 });

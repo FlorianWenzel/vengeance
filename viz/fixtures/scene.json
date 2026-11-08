@@ -15,7 +15,13 @@
      "p4": 9,
      "total": 16
     },
-    "stale": false
+    "stale": false,
+    "kinds": {
+     "vuln": 16,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
    },
    "cluster": "slowbloom",
    "groups": [
@@ -27,11 +33,17 @@
       "open": {
        "p1": 0,
        "p2": 1,
-       "p3": 12,
+       "p3": 13,
        "p4": 21,
-       "total": 34
+       "total": 35
       },
-      "stale": false
+      "stale": false,
+      "kinds": {
+       "vuln": 34,
+       "secret": 0,
+       "misconfig": 1,
+       "sast": 0
+      }
      },
      "workloads": [
       {
@@ -40,16 +52,23 @@
        "kind": "Deployment",
        "ready": 1,
        "desired": 1,
+       "misconfig": 1,
        "status": {
         "level": "p3",
         "open": {
          "p1": 0,
          "p2": 0,
-         "p3": 2,
+         "p3": 3,
          "p4": 4,
-         "total": 6
+         "total": 7
         },
-        "stale": false
+        "stale": false,
+        "kinds": {
+         "vuln": 6,
+         "secret": 0,
+         "misconfig": 1,
+         "sast": 0
+        }
        },
        "images": [
         {
@@ -66,7 +85,13 @@
            "p4": 4,
            "total": 6
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 6,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         }
        ]
@@ -77,6 +102,7 @@
        "kind": "Deployment",
        "ready": 1,
        "desired": 2,
+       "misconfig": 0,
        "status": {
         "level": "p3",
         "open": {
@@ -86,7 +112,13 @@
          "p4": 4,
          "total": 6
         },
-        "stale": false
+        "stale": false,
+        "kinds": {
+         "vuln": 6,
+         "secret": 0,
+         "misconfig": 0,
+         "sast": 0
+        }
        },
        "images": [
         {
@@ -103,7 +135,13 @@
            "p4": 4,
            "total": 6
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 6,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         }
        ]
@@ -114,6 +152,7 @@
        "kind": "StatefulSet",
        "ready": 1,
        "desired": 1,
+       "misconfig": 0,
        "status": {
         "level": "p3",
         "open": {
@@ -123,7 +162,13 @@
          "p4": 4,
          "total": 6
         },
-        "stale": false
+        "stale": false,
+        "kinds": {
+         "vuln": 6,
+         "secret": 0,
+         "misconfig": 0,
+         "sast": 0
+        }
        },
        "images": [
         {
@@ -140,7 +185,13 @@
            "p4": 4,
            "total": 6
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 6,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         }
        ]
@@ -151,6 +202,7 @@
        "kind": "Deployment",
        "ready": 1,
        "desired": 1,
+       "misconfig": 0,
        "status": {
         "level": "p3",
         "open": {
@@ -160,7 +212,13 @@
          "p4": 4,
          "total": 6
         },
-        "stale": false
+        "stale": false,
+        "kinds": {
+         "vuln": 6,
+         "secret": 0,
+         "misconfig": 0,
+         "sast": 0
+        }
        },
        "images": [
         {
@@ -177,7 +235,13 @@
            "p4": 4,
            "total": 6
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 6,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         }
        ]
@@ -188,6 +252,7 @@
        "kind": "Deployment",
        "ready": 1,
        "desired": 1,
+       "misconfig": 0,
        "status": {
         "level": "p3",
         "open": {
@@ -197,7 +262,13 @@
          "p4": 4,
          "total": 6
         },
-        "stale": false
+        "stale": false,
+        "kinds": {
+         "vuln": 6,
+         "secret": 0,
+         "misconfig": 0,
+         "sast": 0
+        }
        },
        "images": [
         {
@@ -214,7 +285,13 @@
            "p4": 4,
            "total": 6
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 6,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         }
        ]
@@ -225,6 +302,7 @@
        "kind": "Deployment",
        "ready": 1,
        "desired": 1,
+       "misconfig": 0,
        "status": {
         "level": "p2",
         "open": {
@@ -234,7 +312,13 @@
          "p4": 1,
          "total": 4
         },
-        "stale": false
+        "stale": false,
+        "kinds": {
+         "vuln": 4,
+         "secret": 0,
+         "misconfig": 0,
+         "sast": 0
+        }
        },
        "images": [
         {
@@ -251,7 +335,13 @@
            "p4": 1,
            "total": 4
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 4,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         }
        ]
@@ -262,6 +352,7 @@
        "kind": "Deployment",
        "ready": 1,
        "desired": 1,
+       "misconfig": 0,
        "status": {
         "level": "ok",
         "open": {
@@ -271,7 +362,13 @@
          "p4": 0,
          "total": 0
         },
-        "stale": false
+        "stale": false,
+        "kinds": {
+         "vuln": 0,
+         "secret": 0,
+         "misconfig": 0,
+         "sast": 0
+        }
        },
        "images": [
         {
@@ -288,12 +385,19 @@
            "p4": 0,
            "total": 0
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 0,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         }
        ]
       }
-     ]
+     ],
+     "domains": []
     },
     {
      "id": "ns:slowbloom/backup",
@@ -307,7 +411,13 @@
        "p4": 3,
        "total": 3
       },
-      "stale": false
+      "stale": false,
+      "kinds": {
+       "vuln": 3,
+       "secret": 0,
+       "misconfig": 0,
+       "sast": 0
+      }
      },
      "workloads": [
       {
@@ -316,6 +426,7 @@
        "kind": "Deployment",
        "ready": 1,
        "desired": 1,
+       "misconfig": 0,
        "status": {
         "level": "p4",
         "open": {
@@ -325,7 +436,13 @@
          "p4": 3,
          "total": 3
         },
-        "stale": false
+        "stale": false,
+        "kinds": {
+         "vuln": 3,
+         "secret": 0,
+         "misconfig": 0,
+         "sast": 0
+        }
        },
        "images": [
         {
@@ -342,7 +459,13 @@
            "p4": 3,
            "total": 3
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 3,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         },
         {
@@ -359,7 +482,13 @@
            "p4": 0,
            "total": 0
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 0,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         }
        ]
@@ -370,6 +499,7 @@
        "kind": "CronJob",
        "ready": 0,
        "desired": 0,
+       "misconfig": 0,
        "status": {
         "level": "ok",
         "open": {
@@ -379,7 +509,13 @@
          "p4": 0,
          "total": 0
         },
-        "stale": false
+        "stale": false,
+        "kinds": {
+         "vuln": 0,
+         "secret": 0,
+         "misconfig": 0,
+         "sast": 0
+        }
        },
        "images": [
         {
@@ -396,12 +532,19 @@
            "p4": 0,
            "total": 0
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 0,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         }
        ]
       }
-     ]
+     ],
+     "domains": []
     },
     {
      "id": "ns:slowbloom/cert-manager",
@@ -415,7 +558,13 @@
        "p4": 0,
        "total": 0
       },
-      "stale": false
+      "stale": false,
+      "kinds": {
+       "vuln": 0,
+       "secret": 0,
+       "misconfig": 0,
+       "sast": 0
+      }
      },
      "workloads": [
       {
@@ -424,6 +573,7 @@
        "kind": "Deployment",
        "ready": 1,
        "desired": 1,
+       "misconfig": 0,
        "status": {
         "level": "ok",
         "open": {
@@ -433,7 +583,13 @@
          "p4": 0,
          "total": 0
         },
-        "stale": false
+        "stale": false,
+        "kinds": {
+         "vuln": 0,
+         "secret": 0,
+         "misconfig": 0,
+         "sast": 0
+        }
        },
        "images": [
         {
@@ -450,7 +606,13 @@
            "p4": 0,
            "total": 0
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 0,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         }
        ]
@@ -461,6 +623,7 @@
        "kind": "Deployment",
        "ready": 1,
        "desired": 1,
+       "misconfig": 0,
        "status": {
         "level": "ok",
         "open": {
@@ -470,7 +633,13 @@
          "p4": 0,
          "total": 0
         },
-        "stale": false
+        "stale": false,
+        "kinds": {
+         "vuln": 0,
+         "secret": 0,
+         "misconfig": 0,
+         "sast": 0
+        }
        },
        "images": [
         {
@@ -487,7 +656,13 @@
            "p4": 0,
            "total": 0
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 0,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         }
        ]
@@ -498,6 +673,7 @@
        "kind": "Deployment",
        "ready": 1,
        "desired": 1,
+       "misconfig": 0,
        "status": {
         "level": "ok",
         "open": {
@@ -507,7 +683,13 @@
          "p4": 0,
          "total": 0
         },
-        "stale": false
+        "stale": false,
+        "kinds": {
+         "vuln": 0,
+         "secret": 0,
+         "misconfig": 0,
+         "sast": 0
+        }
        },
        "images": [
         {
@@ -524,12 +706,19 @@
            "p4": 0,
            "total": 0
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 0,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         }
        ]
       }
-     ]
+     ],
+     "domains": []
     },
     {
      "id": "ns:slowbloom/default",
@@ -543,9 +732,16 @@
        "p4": 0,
        "total": 0
       },
-      "stale": false
+      "stale": false,
+      "kinds": {
+       "vuln": 0,
+       "secret": 0,
+       "misconfig": 0,
+       "sast": 0
+      }
      },
-     "workloads": []
+     "workloads": [],
+     "domains": []
     },
     {
      "id": "ns:slowbloom/ghost",
@@ -555,11 +751,17 @@
       "open": {
        "p1": 0,
        "p2": 2,
-       "p3": 9,
+       "p3": 11,
        "p4": 12,
-       "total": 23
+       "total": 25
       },
-      "stale": false
+      "stale": false,
+      "kinds": {
+       "vuln": 23,
+       "secret": 0,
+       "misconfig": 2,
+       "sast": 0
+      }
      },
      "workloads": [
       {
@@ -568,16 +770,23 @@
        "kind": "Deployment",
        "ready": 1,
        "desired": 1,
+       "misconfig": 2,
        "status": {
         "level": "p2",
         "open": {
          "p1": 0,
          "p2": 2,
-         "p3": 5,
+         "p3": 7,
          "p4": 4,
-         "total": 11
+         "total": 13
         },
-        "stale": false
+        "stale": false,
+        "kinds": {
+         "vuln": 11,
+         "secret": 0,
+         "misconfig": 2,
+         "sast": 0
+        }
        },
        "images": [
         {
@@ -594,7 +803,13 @@
            "p4": 1,
            "total": 7
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 7,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         },
         {
@@ -611,7 +826,13 @@
            "p4": 3,
            "total": 4
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 4,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         }
        ]
@@ -622,6 +843,7 @@
        "kind": "StatefulSet",
        "ready": 1,
        "desired": 1,
+       "misconfig": 0,
        "status": {
         "level": "p3",
         "open": {
@@ -631,7 +853,13 @@
          "p4": 8,
          "total": 12
         },
-        "stale": false
+        "stale": false,
+        "kinds": {
+         "vuln": 12,
+         "secret": 0,
+         "misconfig": 0,
+         "sast": 0
+        }
        },
        "images": [
         {
@@ -648,7 +876,13 @@
            "p4": 5,
            "total": 8
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 8,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         },
         {
@@ -665,11 +899,20 @@
            "p4": 3,
            "total": 4
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 4,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         }
        ]
       }
+     ],
+     "domains": [
+      "flos.life"
      ]
     },
     {
@@ -684,7 +927,13 @@
        "p4": 5,
        "total": 6
       },
-      "stale": false
+      "stale": false,
+      "kinds": {
+       "vuln": 6,
+       "secret": 0,
+       "misconfig": 0,
+       "sast": 0
+      }
      },
      "workloads": [
       {
@@ -693,6 +942,7 @@
        "kind": "Deployment",
        "ready": 1,
        "desired": 1,
+       "misconfig": 0,
        "status": {
         "level": "p4",
         "open": {
@@ -702,7 +952,13 @@
          "p4": 2,
          "total": 2
         },
-        "stale": false
+        "stale": false,
+        "kinds": {
+         "vuln": 2,
+         "secret": 0,
+         "misconfig": 0,
+         "sast": 0
+        }
        },
        "images": [
         {
@@ -719,7 +975,13 @@
            "p4": 2,
            "total": 2
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 2,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         }
        ]
@@ -730,6 +992,7 @@
        "kind": "Deployment",
        "ready": 2,
        "desired": 2,
+       "misconfig": 0,
        "status": {
         "level": "p3",
         "open": {
@@ -739,7 +1002,13 @@
          "p4": 3,
          "total": 4
         },
-        "stale": false
+        "stale": false,
+        "kinds": {
+         "vuln": 4,
+         "secret": 0,
+         "misconfig": 0,
+         "sast": 0
+        }
        },
        "images": [
         {
@@ -756,12 +1025,19 @@
            "p4": 3,
            "total": 4
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 4,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         }
        ]
       }
-     ]
+     ],
+     "domains": []
     },
     {
      "id": "ns:slowbloom/kube-system",
@@ -771,11 +1047,17 @@
       "open": {
        "p1": 0,
        "p2": 0,
-       "p3": 1,
+       "p3": 2,
        "p4": 1,
-       "total": 2
+       "total": 3
       },
-      "stale": false
+      "stale": false,
+      "kinds": {
+       "vuln": 2,
+       "secret": 0,
+       "misconfig": 1,
+       "sast": 0
+      }
      },
      "workloads": [
       {
@@ -784,6 +1066,7 @@
        "kind": "Deployment",
        "ready": 1,
        "desired": 1,
+       "misconfig": 0,
        "status": {
         "level": "ok",
         "open": {
@@ -793,7 +1076,13 @@
          "p4": 0,
          "total": 0
         },
-        "stale": false
+        "stale": false,
+        "kinds": {
+         "vuln": 0,
+         "secret": 0,
+         "misconfig": 0,
+         "sast": 0
+        }
        },
        "images": [
         {
@@ -810,7 +1099,13 @@
            "p4": 0,
            "total": 0
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 0,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         }
        ]
@@ -821,6 +1116,7 @@
        "kind": "Deployment",
        "ready": 1,
        "desired": 1,
+       "misconfig": 0,
        "status": {
         "level": "p4",
         "open": {
@@ -830,7 +1126,13 @@
          "p4": 1,
          "total": 1
         },
-        "stale": false
+        "stale": false,
+        "kinds": {
+         "vuln": 1,
+         "secret": 0,
+         "misconfig": 0,
+         "sast": 0
+        }
        },
        "images": [
         {
@@ -847,7 +1149,13 @@
            "p4": 1,
            "total": 1
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 1,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         }
        ]
@@ -858,6 +1166,7 @@
        "kind": "Deployment",
        "ready": 1,
        "desired": 1,
+       "misconfig": 0,
        "status": {
         "level": "ok",
         "open": {
@@ -867,7 +1176,13 @@
          "p4": 0,
          "total": 0
         },
-        "stale": false
+        "stale": false,
+        "kinds": {
+         "vuln": 0,
+         "secret": 0,
+         "misconfig": 0,
+         "sast": 0
+        }
        },
        "images": [
         {
@@ -884,7 +1199,13 @@
            "p4": 0,
            "total": 0
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 0,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         }
        ]
@@ -895,16 +1216,23 @@
        "kind": "Deployment",
        "ready": 1,
        "desired": 1,
+       "misconfig": 1,
        "status": {
         "level": "p3",
         "open": {
          "p1": 0,
          "p2": 0,
-         "p3": 1,
+         "p3": 2,
          "p4": 0,
-         "total": 1
+         "total": 2
         },
-        "stale": false
+        "stale": false,
+        "kinds": {
+         "vuln": 1,
+         "secret": 0,
+         "misconfig": 1,
+         "sast": 0
+        }
        },
        "images": [
         {
@@ -921,7 +1249,13 @@
            "p4": 0,
            "total": 1
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 1,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         }
        ]
@@ -932,6 +1266,7 @@
        "kind": "DaemonSet",
        "ready": 1,
        "desired": 1,
+       "misconfig": 0,
        "status": {
         "level": "ok",
         "open": {
@@ -941,7 +1276,13 @@
          "p4": 0,
          "total": 0
         },
-        "stale": false
+        "stale": false,
+        "kinds": {
+         "vuln": 0,
+         "secret": 0,
+         "misconfig": 0,
+         "sast": 0
+        }
        },
        "images": [
         {
@@ -958,7 +1299,13 @@
            "p4": 0,
            "total": 0
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 0,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         },
         {
@@ -975,12 +1322,19 @@
            "p4": 0,
            "total": 0
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 0,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         }
        ]
       }
-     ]
+     ],
+     "domains": []
     },
     {
      "id": "ns:slowbloom/mailpit",
@@ -994,7 +1348,13 @@
        "p4": 0,
        "total": 0
       },
-      "stale": false
+      "stale": false,
+      "kinds": {
+       "vuln": 0,
+       "secret": 0,
+       "misconfig": 0,
+       "sast": 0
+      }
      },
      "workloads": [
       {
@@ -1003,6 +1363,7 @@
        "kind": "Deployment",
        "ready": 1,
        "desired": 1,
+       "misconfig": 0,
        "status": {
         "level": "ok",
         "open": {
@@ -1012,7 +1373,13 @@
          "p4": 0,
          "total": 0
         },
-        "stale": false
+        "stale": false,
+        "kinds": {
+         "vuln": 0,
+         "secret": 0,
+         "misconfig": 0,
+         "sast": 0
+        }
        },
        "images": [
         {
@@ -1029,12 +1396,19 @@
            "p4": 0,
            "total": 0
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 0,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         }
        ]
       }
-     ]
+     ],
+     "domains": []
     },
     {
      "id": "ns:slowbloom/minio",
@@ -1048,7 +1422,13 @@
        "p4": 0,
        "total": 1
       },
-      "stale": false
+      "stale": false,
+      "kinds": {
+       "vuln": 1,
+       "secret": 0,
+       "misconfig": 0,
+       "sast": 0
+      }
      },
      "workloads": [
       {
@@ -1057,6 +1437,7 @@
        "kind": "StatefulSet",
        "ready": 1,
        "desired": 1,
+       "misconfig": 0,
        "status": {
         "level": "p2",
         "open": {
@@ -1066,7 +1447,13 @@
          "p4": 0,
          "total": 1
         },
-        "stale": false
+        "stale": false,
+        "kinds": {
+         "vuln": 1,
+         "secret": 0,
+         "misconfig": 0,
+         "sast": 0
+        }
        },
        "images": [
         {
@@ -1083,12 +1470,19 @@
            "p4": 0,
            "total": 1
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 1,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         }
        ]
       }
-     ]
+     ],
+     "domains": []
     },
     {
      "id": "ns:slowbloom/monitoring",
@@ -1102,7 +1496,13 @@
        "p4": 2,
        "total": 4
       },
-      "stale": false
+      "stale": false,
+      "kinds": {
+       "vuln": 4,
+       "secret": 0,
+       "misconfig": 0,
+       "sast": 0
+      }
      },
      "workloads": [
       {
@@ -1111,6 +1511,7 @@
        "kind": "StatefulSet",
        "ready": 1,
        "desired": 1,
+       "misconfig": 0,
        "status": {
         "level": "ok",
         "open": {
@@ -1120,7 +1521,13 @@
          "p4": 0,
          "total": 0
         },
-        "stale": false
+        "stale": false,
+        "kinds": {
+         "vuln": 0,
+         "secret": 0,
+         "misconfig": 0,
+         "sast": 0
+        }
        },
        "images": [
         {
@@ -1137,7 +1544,13 @@
            "p4": 0,
            "total": 0
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 0,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         },
         {
@@ -1154,7 +1567,13 @@
            "p4": 0,
            "total": 0
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 0,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         }
        ]
@@ -1165,6 +1584,7 @@
        "kind": "Deployment",
        "ready": 1,
        "desired": 1,
+       "misconfig": 0,
        "status": {
         "level": "p3",
         "open": {
@@ -1174,7 +1594,13 @@
          "p4": 2,
          "total": 4
         },
-        "stale": false
+        "stale": false,
+        "kinds": {
+         "vuln": 4,
+         "secret": 0,
+         "misconfig": 0,
+         "sast": 0
+        }
        },
        "images": [
         {
@@ -1191,7 +1617,13 @@
            "p4": 2,
            "total": 4
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 4,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         },
         {
@@ -1208,7 +1640,13 @@
            "p4": 0,
            "total": 0
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 0,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         }
        ]
@@ -1219,6 +1657,7 @@
        "kind": "StatefulSet",
        "ready": 0,
        "desired": 1,
+       "misconfig": 0,
        "status": {
         "level": "ok",
         "open": {
@@ -1228,7 +1667,13 @@
          "p4": 0,
          "total": 0
         },
-        "stale": false
+        "stale": false,
+        "kinds": {
+         "vuln": 0,
+         "secret": 0,
+         "misconfig": 0,
+         "sast": 0
+        }
        },
        "images": [
         {
@@ -1245,7 +1690,13 @@
            "p4": 0,
            "total": 0
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 0,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         }
        ]
@@ -1256,6 +1707,7 @@
        "kind": "DaemonSet",
        "ready": 1,
        "desired": 1,
+       "misconfig": 0,
        "status": {
         "level": "ok",
         "open": {
@@ -1265,7 +1717,13 @@
          "p4": 0,
          "total": 0
         },
-        "stale": false
+        "stale": false,
+        "kinds": {
+         "vuln": 0,
+         "secret": 0,
+         "misconfig": 0,
+         "sast": 0
+        }
        },
        "images": [
         {
@@ -1282,7 +1740,13 @@
            "p4": 0,
            "total": 0
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 0,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         }
        ]
@@ -1293,6 +1757,7 @@
        "kind": "Deployment",
        "ready": 1,
        "desired": 1,
+       "misconfig": 0,
        "status": {
         "level": "ok",
         "open": {
@@ -1302,7 +1767,13 @@
          "p4": 0,
          "total": 0
         },
-        "stale": false
+        "stale": false,
+        "kinds": {
+         "vuln": 0,
+         "secret": 0,
+         "misconfig": 0,
+         "sast": 0
+        }
        },
        "images": [
         {
@@ -1319,12 +1790,19 @@
            "p4": 0,
            "total": 0
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 0,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         }
        ]
       }
-     ]
+     ],
+     "domains": []
     },
     {
      "id": "ns:slowbloom/renovate",
@@ -1338,7 +1816,13 @@
        "p4": 0,
        "total": 0
       },
-      "stale": true
+      "stale": true,
+      "kinds": {
+       "vuln": 0,
+       "secret": 0,
+       "misconfig": 0,
+       "sast": 0
+      }
      },
      "workloads": [
       {
@@ -1347,6 +1831,7 @@
        "kind": "CronJob",
        "ready": 0,
        "desired": 0,
+       "misconfig": 0,
        "status": {
         "level": "unknown",
         "open": {
@@ -1356,7 +1841,13 @@
          "p4": 0,
          "total": 0
         },
-        "stale": true
+        "stale": true,
+        "kinds": {
+         "vuln": 0,
+         "secret": 0,
+         "misconfig": 0,
+         "sast": 0
+        }
        },
        "images": [
         {
@@ -1373,12 +1864,19 @@
            "p4": 0,
            "total": 0
           },
-          "stale": true
+          "stale": true,
+          "kinds": {
+           "vuln": 0,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         }
        ]
       }
-     ]
+     ],
+     "domains": []
     },
     {
      "id": "ns:slowbloom/slowbloom",
@@ -1386,13 +1884,19 @@
      "status": {
       "level": "p1",
       "open": {
-       "p1": 1,
+       "p1": 2,
        "p2": 3,
        "p3": 10,
        "p4": 17,
-       "total": 31
+       "total": 32
       },
-      "stale": false
+      "stale": false,
+      "kinds": {
+       "vuln": 31,
+       "secret": 1,
+       "misconfig": 0,
+       "sast": 0
+      }
      },
      "workloads": [
       {
@@ -1401,6 +1905,7 @@
        "kind": "Deployment",
        "ready": 2,
        "desired": 2,
+       "misconfig": 0,
        "status": {
         "level": "p1",
         "open": {
@@ -1410,7 +1915,13 @@
          "p4": 7,
          "total": 14
         },
-        "stale": false
+        "stale": false,
+        "kinds": {
+         "vuln": 14,
+         "secret": 0,
+         "misconfig": 0,
+         "sast": 0
+        }
        },
        "images": [
         {
@@ -1427,7 +1938,13 @@
            "p4": 4,
            "total": 10
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 10,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         },
         {
@@ -1444,7 +1961,13 @@
            "p4": 3,
            "total": 4
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 4,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         }
        ]
@@ -1455,16 +1978,23 @@
        "kind": "Deployment",
        "ready": 2,
        "desired": 2,
+       "misconfig": 0,
        "status": {
-        "level": "p3",
+        "level": "p1",
         "open": {
-         "p1": 0,
+         "p1": 1,
          "p2": 0,
          "p3": 2,
          "p4": 5,
-         "total": 7
+         "total": 8
         },
-        "stale": false
+        "stale": false,
+        "kinds": {
+         "vuln": 7,
+         "secret": 1,
+         "misconfig": 0,
+         "sast": 0
+        }
        },
        "images": [
         {
@@ -1481,7 +2011,13 @@
            "p4": 2,
            "total": 3
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 3,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         },
         {
@@ -1498,7 +2034,13 @@
            "p4": 3,
            "total": 4
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 4,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         }
        ]
@@ -1509,6 +2051,7 @@
        "kind": "Deployment",
        "ready": 1,
        "desired": 1,
+       "misconfig": 0,
        "status": {
         "level": "p3",
         "open": {
@@ -1518,7 +2061,13 @@
          "p4": 3,
          "total": 4
         },
-        "stale": false
+        "stale": false,
+        "kinds": {
+         "vuln": 4,
+         "secret": 0,
+         "misconfig": 0,
+         "sast": 0
+        }
        },
        "images": [
         {
@@ -1535,7 +2084,13 @@
            "p4": 0,
            "total": 0
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 0,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         },
         {
@@ -1552,7 +2107,13 @@
            "p4": 3,
            "total": 4
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 4,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         }
        ]
@@ -1563,6 +2124,7 @@
        "kind": "StatefulSet",
        "ready": 1,
        "desired": 1,
+       "misconfig": 0,
        "status": {
         "level": "p2",
         "open": {
@@ -1572,7 +2134,13 @@
          "p4": 2,
          "total": 4
         },
-        "stale": false
+        "stale": false,
+        "kinds": {
+         "vuln": 4,
+         "secret": 0,
+         "misconfig": 0,
+         "sast": 0
+        }
        },
        "images": [
         {
@@ -1589,7 +2157,13 @@
            "p4": 2,
            "total": 2
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 2,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         },
         {
@@ -1606,7 +2180,13 @@
            "p4": 0,
            "total": 2
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 2,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         }
        ]
@@ -1617,6 +2197,7 @@
        "kind": "Deployment",
        "ready": 1,
        "desired": 1,
+       "misconfig": 0,
        "status": {
         "level": "p3",
         "open": {
@@ -1626,7 +2207,13 @@
          "p4": 0,
          "total": 2
         },
-        "stale": false
+        "stale": false,
+        "kinds": {
+         "vuln": 2,
+         "secret": 0,
+         "misconfig": 0,
+         "sast": 0
+        }
        },
        "images": [
         {
@@ -1643,11 +2230,22 @@
            "p4": 0,
            "total": 2
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 2,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         }
        ]
       }
+     ],
+     "domains": [
+      "slowbloom.app",
+      "www.slowbloom.app",
+      "registry.flos.life"
      ]
     },
     {
@@ -1662,7 +2260,13 @@
        "p4": 5,
        "total": 7
       },
-      "stale": true
+      "stale": true,
+      "kinds": {
+       "vuln": 7,
+       "secret": 0,
+       "misconfig": 0,
+       "sast": 0
+      }
      },
      "workloads": [
       {
@@ -1671,6 +2275,7 @@
        "kind": "Deployment",
        "ready": 1,
        "desired": 1,
+       "misconfig": 0,
        "status": {
         "level": "p3",
         "open": {
@@ -1680,7 +2285,13 @@
          "p4": 1,
          "total": 3
         },
-        "stale": true
+        "stale": true,
+        "kinds": {
+         "vuln": 3,
+         "secret": 0,
+         "misconfig": 0,
+         "sast": 0
+        }
        },
        "images": [
         {
@@ -1697,7 +2308,13 @@
            "p4": 1,
            "total": 3
           },
-          "stale": true
+          "stale": true,
+          "kinds": {
+           "vuln": 3,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         }
        ]
@@ -1708,6 +2325,7 @@
        "kind": "StatefulSet",
        "ready": 1,
        "desired": 1,
+       "misconfig": 0,
        "status": {
         "level": "p4",
         "open": {
@@ -1717,7 +2335,13 @@
          "p4": 4,
          "total": 4
         },
-        "stale": true
+        "stale": true,
+        "kinds": {
+         "vuln": 4,
+         "secret": 0,
+         "misconfig": 0,
+         "sast": 0
+        }
        },
        "images": [
         {
@@ -1734,11 +2358,20 @@
            "p4": 4,
            "total": 4
           },
-          "stale": true
+          "stale": true,
+          "kinds": {
+           "vuln": 4,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         }
        ]
       }
+     ],
+     "domains": [
+      "stats.flos.life"
      ]
     },
     {
@@ -1753,7 +2386,13 @@
        "p4": 0,
        "total": 4
       },
-      "stale": false
+      "stale": false,
+      "kinds": {
+       "vuln": 4,
+       "secret": 0,
+       "misconfig": 0,
+       "sast": 0
+      }
      },
      "workloads": [
       {
@@ -1762,6 +2401,7 @@
        "kind": "Deployment",
        "ready": 1,
        "desired": 1,
+       "misconfig": 0,
        "status": {
         "level": "p2",
         "open": {
@@ -1771,7 +2411,13 @@
          "p4": 0,
          "total": 4
         },
-        "stale": false
+        "stale": false,
+        "kinds": {
+         "vuln": 4,
+         "secret": 0,
+         "misconfig": 0,
+         "sast": 0
+        }
        },
        "images": [
         {
@@ -1788,11 +2434,20 @@
            "p4": 0,
            "total": 4
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 4,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         }
        ]
       }
+     ],
+     "domains": [
+      "status.flos.life"
      ]
     },
     {
@@ -1807,7 +2462,13 @@
        "p4": 0,
        "total": 0
       },
-      "stale": false
+      "stale": false,
+      "kinds": {
+       "vuln": 0,
+       "secret": 0,
+       "misconfig": 0,
+       "sast": 0
+      }
      },
      "workloads": [
       {
@@ -1816,6 +2477,7 @@
        "kind": "Deployment",
        "ready": 1,
        "desired": 1,
+       "misconfig": 0,
        "status": {
         "level": "ok",
         "open": {
@@ -1825,7 +2487,13 @@
          "p4": 0,
          "total": 0
         },
-        "stale": false
+        "stale": false,
+        "kinds": {
+         "vuln": 0,
+         "secret": 0,
+         "misconfig": 0,
+         "sast": 0
+        }
        },
        "images": [
         {
@@ -1842,7 +2510,13 @@
            "p4": 0,
            "total": 0
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 0,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         }
        ]
@@ -1853,6 +2527,7 @@
        "kind": "CronJob",
        "ready": 0,
        "desired": 0,
+       "misconfig": 0,
        "status": {
         "level": "ok",
         "open": {
@@ -1862,7 +2537,13 @@
          "p4": 0,
          "total": 0
         },
-        "stale": false
+        "stale": false,
+        "kinds": {
+         "vuln": 0,
+         "secret": 0,
+         "misconfig": 0,
+         "sast": 0
+        }
        },
        "images": [
         {
@@ -1879,11 +2560,20 @@
            "p4": 0,
            "total": 0
           },
-          "stale": false
+          "stale": false,
+          "kinds": {
+           "vuln": 0,
+           "secret": 0,
+           "misconfig": 0,
+           "sast": 0
+          }
          }
         }
        ]
       }
+     ],
+     "domains": [
+      "vengeance.flos.life"
      ]
     }
    ]
@@ -1904,7 +2594,13 @@
      "p4": 0,
      "total": 3
     },
-    "stale": false
+    "stale": false,
+    "kinds": {
+     "vuln": 3,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
    }
   },
   {
@@ -1921,7 +2617,13 @@
      "p4": 0,
      "total": 0
     },
-    "stale": false
+    "stale": false,
+    "kinds": {
+     "vuln": 0,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
    }
   },
   {
@@ -1930,15 +2632,21 @@
    "kind": "repository",
    "name": "flos-life/infra",
    "status": {
-    "level": "p3",
+    "level": "p1",
     "open": {
-     "p1": 0,
+     "p1": 2,
      "p2": 0,
      "p3": 1,
      "p4": 0,
-     "total": 1
+     "total": 3
     },
-    "stale": false
+    "stale": false,
+    "kinds": {
+     "vuln": 1,
+     "secret": 2,
+     "misconfig": 0,
+     "sast": 0
+    }
    }
   },
   {
@@ -1955,7 +2663,13 @@
      "p4": 0,
      "total": 0
     },
-    "stale": true
+    "stale": true,
+    "kinds": {
+     "vuln": 0,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
    }
   },
   {
@@ -1972,7 +2686,13 @@
      "p4": 0,
      "total": 0
     },
-    "stale": false
+    "stale": false,
+    "kinds": {
+     "vuln": 0,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
    }
   },
   {
@@ -1989,7 +2709,36 @@
      "p4": 0,
      "total": 1
     },
-    "stale": false
+    "stale": false,
+    "kinds": {
+     "vuln": 0,
+     "secret": 0,
+     "misconfig": 1,
+     "sast": 0
+    }
+   }
+  },
+  {
+   "id": "asset:11",
+   "assetId": 11,
+   "kind": "domain",
+   "name": "old.flos.life",
+   "status": {
+    "level": "unknown",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 0,
+     "p4": 0,
+     "total": 0
+    },
+    "stale": true,
+    "kinds": {
+     "vuln": 0,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
    }
   },
   {
@@ -2006,7 +2755,13 @@
      "p4": 0,
      "total": 1
     },
-    "stale": false
+    "stale": false,
+    "kinds": {
+     "vuln": 1,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
    }
   },
   {
@@ -2023,8 +2778,1091 @@
      "p4": 1,
      "total": 1
     },
-    "stale": false
+    "stale": false,
+    "kinds": {
+     "vuln": 1,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
    }
+  }
+ ],
+ "images": [
+  {
+   "id": "img:132",
+   "assetId": 132,
+   "name": "alertmanager",
+   "status": {
+    "level": "ok",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 0,
+     "p4": 0,
+     "total": 0
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 0,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": true
+  },
+  {
+   "id": "img:101",
+   "assetId": 101,
+   "name": "argocd",
+   "status": {
+    "level": "p3",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 2,
+     "p4": 4,
+     "total": 6
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 6,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": true
+  },
+  {
+   "id": "img:154",
+   "assetId": 154,
+   "name": "argocd",
+   "status": {
+    "level": "p2",
+    "open": {
+     "p1": 0,
+     "p2": 2,
+     "p3": 5,
+     "p4": 1,
+     "total": 8
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 8,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": false
+  },
+  {
+   "id": "img:112",
+   "assetId": 112,
+   "name": "cert-manager-cainjector",
+   "status": {
+    "level": "ok",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 0,
+     "p4": 0,
+     "total": 0
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 0,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": true
+  },
+  {
+   "id": "img:111",
+   "assetId": 111,
+   "name": "cert-manager-controller",
+   "status": {
+    "level": "ok",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 0,
+     "p4": 0,
+     "total": 0
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 0,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": true
+  },
+  {
+   "id": "img:113",
+   "assetId": 113,
+   "name": "cert-manager-webhook",
+   "status": {
+    "level": "ok",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 0,
+     "p4": 0,
+     "total": 0
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 0,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": true
+  },
+  {
+   "id": "img:107",
+   "assetId": 107,
+   "name": "dex",
+   "status": {
+    "level": "ok",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 0,
+     "p4": 0,
+     "total": 0
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 0,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": true
+  },
+  {
+   "id": "img:114",
+   "assetId": 114,
+   "name": "ghost",
+   "status": {
+    "level": "p2",
+    "open": {
+     "p1": 0,
+     "p2": 2,
+     "p3": 4,
+     "p4": 1,
+     "total": 7
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 7,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": true
+  },
+  {
+   "id": "img:152",
+   "assetId": 152,
+   "name": "ghost",
+   "status": {
+    "level": "p1",
+    "open": {
+     "p1": 1,
+     "p2": 4,
+     "p3": 6,
+     "p4": 2,
+     "total": 13
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 13,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": false
+  },
+  {
+   "id": "img:130",
+   "assetId": 130,
+   "name": "grafana",
+   "status": {
+    "level": "p3",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 2,
+     "p4": 2,
+     "total": 4
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 4,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": true
+  },
+  {
+   "id": "img:131",
+   "assetId": 131,
+   "name": "k8s-sidecar",
+   "status": {
+    "level": "ok",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 0,
+     "p4": 0,
+     "total": 0
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 0,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": true
+  },
+  {
+   "id": "img:124",
+   "assetId": 124,
+   "name": "klipper-lb",
+   "status": {
+    "level": "ok",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 0,
+     "p4": 0,
+     "total": 0
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 0,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": true
+  },
+  {
+   "id": "img:134",
+   "assetId": 134,
+   "name": "kube-state-metrics",
+   "status": {
+    "level": "ok",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 0,
+     "p4": 0,
+     "total": 0
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 0,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": true
+  },
+  {
+   "id": "img:121",
+   "assetId": 121,
+   "name": "local-path-provisioner",
+   "status": {
+    "level": "p4",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 0,
+     "p4": 1,
+     "total": 1
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 1,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": true
+  },
+  {
+   "id": "img:126",
+   "assetId": 126,
+   "name": "mailpit",
+   "status": {
+    "level": "ok",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 0,
+     "p4": 0,
+     "total": 0
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 0,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": true
+  },
+  {
+   "id": "img:127",
+   "assetId": 127,
+   "name": "minio",
+   "status": {
+    "level": "p2",
+    "open": {
+     "p1": 0,
+     "p2": 1,
+     "p3": 0,
+     "p4": 0,
+     "total": 1
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 1,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": true
+  },
+  {
+   "id": "img:120",
+   "assetId": 120,
+   "name": "mirrored-coredns-coredns",
+   "status": {
+    "level": "ok",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 0,
+     "p4": 0,
+     "total": 0
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 0,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": true
+  },
+  {
+   "id": "img:123",
+   "assetId": 123,
+   "name": "mirrored-library-traefik",
+   "status": {
+    "level": "p3",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 1,
+     "p4": 0,
+     "total": 1
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 1,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": true
+  },
+  {
+   "id": "img:122",
+   "assetId": 122,
+   "name": "mirrored-metrics-server",
+   "status": {
+    "level": "ok",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 0,
+     "p4": 0,
+     "total": 0
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 0,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": true
+  },
+  {
+   "id": "img:116",
+   "assetId": 116,
+   "name": "mysql",
+   "status": {
+    "level": "p3",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 3,
+     "p4": 5,
+     "total": 8
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 8,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": true
+  },
+  {
+   "id": "img:133",
+   "assetId": 133,
+   "name": "node-exporter",
+   "status": {
+    "level": "ok",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 0,
+     "p4": 0,
+     "total": 0
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 0,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": true
+  },
+  {
+   "id": "img:136",
+   "assetId": 136,
+   "name": "petal-api",
+   "status": {
+    "level": "p1",
+    "open": {
+     "p1": 1,
+     "p2": 2,
+     "p3": 3,
+     "p4": 4,
+     "total": 10
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 10,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": true
+  },
+  {
+   "id": "img:150",
+   "assetId": 150,
+   "name": "petal-api",
+   "status": {
+    "level": "p2",
+    "open": {
+     "p1": 0,
+     "p2": 3,
+     "p3": 4,
+     "p4": 2,
+     "total": 9
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 9,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": false
+  },
+  {
+   "id": "img:140",
+   "assetId": 140,
+   "name": "petal-marketing",
+   "status": {
+    "level": "ok",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 0,
+     "p4": 0,
+     "total": 0
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 0,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": true
+  },
+  {
+   "id": "img:138",
+   "assetId": 138,
+   "name": "petal-web",
+   "status": {
+    "level": "p3",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 1,
+     "p4": 2,
+     "total": 3
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 3,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": true
+  },
+  {
+   "id": "img:151",
+   "assetId": 151,
+   "name": "petal-web",
+   "status": {
+    "level": "p3",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 2,
+     "p4": 1,
+     "total": 3
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 3,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": false
+  },
+  {
+   "id": "img:118",
+   "assetId": 118,
+   "name": "pilot",
+   "status": {
+    "level": "p4",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 0,
+     "p4": 2,
+     "total": 2
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 2,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": true
+  },
+  {
+   "id": "img:110",
+   "assetId": 110,
+   "name": "postgres",
+   "status": {
+    "level": "ok",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 0,
+     "p4": 0,
+     "total": 0
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 0,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": true
+  },
+  {
+   "id": "img:146",
+   "assetId": 146,
+   "name": "postgres",
+   "status": {
+    "level": "p4",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 0,
+     "p4": 4,
+     "total": 4
+    },
+    "stale": true,
+    "kinds": {
+     "vuln": 4,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": true
+  },
+  {
+   "id": "img:153",
+   "assetId": 153,
+   "name": "postgres",
+   "status": {
+    "level": "p3",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 3,
+     "p4": 3,
+     "total": 6
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 6,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": false
+  },
+  {
+   "id": "img:143",
+   "assetId": 143,
+   "name": "postgres-backup-local",
+   "status": {
+    "level": "p2",
+    "open": {
+     "p1": 0,
+     "p2": 1,
+     "p3": 1,
+     "p4": 0,
+     "total": 2
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 2,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": true
+  },
+  {
+   "id": "img:128",
+   "assetId": 128,
+   "name": "prometheus",
+   "status": {
+    "level": "ok",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 0,
+     "p4": 0,
+     "total": 0
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 0,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": true
+  },
+  {
+   "id": "img:129",
+   "assetId": 129,
+   "name": "prometheus-config-reloader",
+   "status": {
+    "level": "ok",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 0,
+     "p4": 0,
+     "total": 0
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 0,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": true
+  },
+  {
+   "id": "img:115",
+   "assetId": 115,
+   "name": "proxyv2",
+   "status": {
+    "level": "p3",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 1,
+     "p4": 3,
+     "total": 4
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 4,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": true
+  },
+  {
+   "id": "img:106",
+   "assetId": 106,
+   "name": "redis",
+   "status": {
+    "level": "p2",
+    "open": {
+     "p1": 0,
+     "p2": 1,
+     "p3": 2,
+     "p4": 1,
+     "total": 4
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 4,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": true
+  },
+  {
+   "id": "img:155",
+   "assetId": 155,
+   "name": "redis",
+   "status": {
+    "level": "p2",
+    "open": {
+     "p1": 0,
+     "p2": 1,
+     "p3": 2,
+     "p4": 0,
+     "total": 3
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 3,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": false
+  },
+  {
+   "id": "img:144",
+   "assetId": 144,
+   "name": "registry",
+   "status": {
+    "level": "p3",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 2,
+     "p4": 0,
+     "total": 2
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 2,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": true
+  },
+  {
+   "id": "img:135",
+   "assetId": 135,
+   "name": "renovate",
+   "status": {
+    "level": "unknown",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 0,
+     "p4": 0,
+     "total": 0
+    },
+    "stale": true,
+    "kinds": {
+     "vuln": 0,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": true
+  },
+  {
+   "id": "img:157",
+   "assetId": 157,
+   "name": "traefik",
+   "status": {
+    "level": "p4",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 0,
+     "p4": 2,
+     "total": 2
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 2,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": false
+  },
+  {
+   "id": "img:145",
+   "assetId": 145,
+   "name": "umami",
+   "status": {
+    "level": "p3",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 2,
+     "p4": 1,
+     "total": 3
+    },
+    "stale": true,
+    "kinds": {
+     "vuln": 3,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": true
+  },
+  {
+   "id": "img:147",
+   "assetId": 147,
+   "name": "uptime-kuma",
+   "status": {
+    "level": "p2",
+    "open": {
+     "p1": 0,
+     "p2": 3,
+     "p3": 1,
+     "p4": 0,
+     "total": 4
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 4,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": true
+  },
+  {
+   "id": "img:108",
+   "assetId": 108,
+   "name": "velero",
+   "status": {
+    "level": "p4",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 0,
+     "p4": 3,
+     "total": 3
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 3,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": true
+  },
+  {
+   "id": "img:109",
+   "assetId": 109,
+   "name": "velero-plugin-for-aws",
+   "status": {
+    "level": "ok",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 0,
+     "p4": 0,
+     "total": 0
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 0,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": true
+  },
+  {
+   "id": "img:148",
+   "assetId": 148,
+   "name": "vengeance",
+   "status": {
+    "level": "ok",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 0,
+     "p4": 0,
+     "total": 0
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 0,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": true
+  },
+  {
+   "id": "img:156",
+   "assetId": 156,
+   "name": "vengeance",
+   "status": {
+    "level": "ok",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 0,
+     "p4": 0,
+     "total": 0
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 0,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": false
+  },
+  {
+   "id": "img:149",
+   "assetId": 149,
+   "name": "vengeance-scanner",
+   "status": {
+    "level": "ok",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 0,
+     "p4": 0,
+     "total": 0
+    },
+    "stale": false,
+    "kinds": {
+     "vuln": 0,
+     "secret": 0,
+     "misconfig": 0,
+     "sast": 0
+    }
+   },
+   "running": true
+  }
+ ],
+ "sources": [
+  {
+   "name": "slowbloom-cluster",
+   "lastSeenAt": "2026-11-08T03:10:00Z",
+   "stale": false
+  },
+  {
+   "name": "host-scan@slowbloom",
+   "lastSeenAt": "2026-11-08T02:00:00Z",
+   "stale": false
+  },
+  {
+   "name": "github-actions",
+   "lastSeenAt": "2026-10-30T09:00:00Z",
+   "stale": true
   }
  ]
 }

@@ -44,6 +44,8 @@ pub struct Label<'a> {
     pub stale: bool,
     pub selected: bool,
     pub hovered: bool,
+    /// Walk mode: what the metaphor means (empty in orbit mode).
+    pub meaning: &'a str,
 }
 
 pub struct Engine {
@@ -73,6 +75,9 @@ pub struct Engine {
     pub(crate) last_now: Option<f64>,
     pub(crate) orbit_framed: bool,
     pub(crate) look_drag: Option<(Vec2, Vec2, bool)>,
+    /// Per-frame geometry (searchlight beams), rebuilt in place.
+    pub dynamic: Geo,
+    pub dynamic_version: u64,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -115,6 +120,8 @@ impl Engine {
             last_now: None,
             orbit_framed: false,
             look_drag: None,
+            dynamic: Geo::default(),
+            dynamic_version: 0,
         }
     }
 
@@ -511,8 +518,12 @@ impl Engine {
             self.highlight_key = (self.hovered, self.selected);
             self.rebuild_highlight();
         }
-        let redraw = self.dirty || (self.layout.has_stale && !self.reduced_motion);
+        let animated = self.layout.has_stale || (self.mode == Mode::Walk && self.layout.animated);
+        let redraw = self.dirty || (animated && !self.reduced_motion);
         self.dirty = false;
+        if redraw && self.mode == Mode::Walk {
+            self.rebuild_dynamic();
+        }
         redraw
     }
 
@@ -607,6 +618,7 @@ impl Engine {
                 stale: n.stale,
                 selected: Some(i) == self.selected,
                 hovered: Some(i) == self.hovered,
+                meaning: &n.meaning,
             });
         }
         // Far to near, so later (nearer) labels stack on top in DOM order.

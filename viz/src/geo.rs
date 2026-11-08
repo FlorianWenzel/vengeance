@@ -94,6 +94,10 @@ pub const OCCLUDER: u32 = 4;
 pub const HATCH: u32 = 8;
 pub const NO_HIDDEN: u32 = 16;
 pub const ALERT: u32 = 32;
+pub const EMISSIVE: u32 = 64;
+pub const FIRE: u32 = 128;
+pub const SMOKE: u32 = 256;
+pub const GLOW: u32 = 512;
 
 pub const LINE_STRIDE: usize = 17; // p0 3, p1 3, color 4, anchor 3, near, far, flags, width
 pub const FACE_STRIDE: usize = 16; // min 3, size 3, color 4, anchor 3, near, far, flags
@@ -205,6 +209,14 @@ impl Geo {
             p.x, p.y, p.z, size, rgb[0], rgb[1], rgb[2], 1.0, lod.anchor.x, lod.anchor.y, lod.anchor.z, lod.near, lod.far,
             flags as f32, min_px, 0.0,
         ]);
+    }
+
+    /// Animated particle (fire / smoke flags); `phase` in 0..1 staggers the loop.
+    #[allow(clippy::too_many_arguments)]
+    pub fn particle(&mut self, p: Vec3, size: f32, rgb: [f32; 3], lod: Lod, flags: u32, min_px: f32, phase: f32) {
+        self.led(p, size, rgb, lod, flags, min_px);
+        let n = self.leds.len();
+        self.leds[n - 1] = phase;
     }
 
     /// A CAD dimension line from `a` to `b` with arrowheads and end ticks, `n` = tick direction.

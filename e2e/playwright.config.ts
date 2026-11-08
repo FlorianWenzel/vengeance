@@ -2,7 +2,8 @@ import { defineConfig, devices } from '@playwright/test';
 
 // Runs against the compose stack (docker compose up -d --build --wait).
 export default defineConfig({
-  testDir: './tests',
+  testDir: '.',
+  testMatch: ['tests/**/*.spec.ts', 'demo/**/*.spec.ts'],
   timeout: 60_000,
   expect: { timeout: 10_000 },
   fullyParallel: false,

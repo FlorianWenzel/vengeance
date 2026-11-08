@@ -23,8 +23,30 @@ type Asset struct {
 	LastScanAt  *time.Time     `json:"lastScanAt"`
 	Discovered  bool           `json:"discovered"`
 	Open        Counts         `json:"open"`
+	OpenKinds   KindCounts     `json:"openKinds"`
 	Coverage    []CoverageCell `json:"coverage"`
 	Covered     bool           `json:"covered"`
+}
+
+// KindCounts is open findings per kind.
+type KindCounts struct {
+	Vuln      int `json:"vuln"`
+	Secret    int `json:"secret"`
+	Misconfig int `json:"misconfig"`
+	SAST      int `json:"sast"`
+}
+
+func (k *KindCounts) add(kind string, n int) {
+	switch kind {
+	case "vuln":
+		k.Vuln += n
+	case "secret":
+		k.Secret += n
+	case "misconfig":
+		k.Misconfig += n
+	case "sast":
+		k.SAST += n
+	}
 }
 
 // CoverageCell is one expected scan type on one asset.
@@ -96,19 +118,21 @@ func (s *Store) ListAssets(ctx context.Context, f AssetFilter) ([]Asset, error) 
 		ids[i] = a.ID
 	}
 	// open counts
-	crow, err := s.DB.Query(ctx, `SELECT asset_id, priority, count(*) FROM findings
-		WHERE asset_id = ANY($1) AND state = ANY($2) GROUP BY asset_id, priority`, ids, OpenStates)
+	crow, err := s.DB.Query(ctx, `SELECT asset_id, priority, kind, count(*) FROM findings
+		WHERE asset_id = ANY($1) AND state = ANY($2) GROUP BY asset_id, priority, kind`, ids, OpenStates)
 	if err != nil {
 		return nil, err
 	}
 	for crow.Next() {
 		var id int64
 		var p, n int
-		if err := crow.Scan(&id, &p, &n); err != nil {
+		var kind string
+		if err := crow.Scan(&id, &p, &kind, &n); err != nil {
 			crow.Close()
 			return nil, err
 		}
 		assets[idx[id]].Open.add(p, n)
+		assets[idx[id]].OpenKinds.add(kind, n)
 	}
 	crow.Close()
 	// coverage

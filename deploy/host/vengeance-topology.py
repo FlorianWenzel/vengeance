@@ -2,7 +2,10 @@
 """Print this cluster's topology as Vengeance expects it (docs/topology.md §1).
 
 Usage: kubectl get nodes,pods,replicasets,deployments,statefulsets,daemonsets -A -o json \
-         | vengeance-topology.py CLUSTER HOST_ASSET
+         | vengeance-topology.py CLUSTER HOST_ASSET [ROUTES_JSON]
+
+ROUTES_JSON is optional output of `kubectl get httproutes,ingresses -A -o json`; it tells which
+namespace serves which hostname (the neon doors in the blueprint's walk mode).
 """
 import json
 import sys
@@ -65,4 +68,17 @@ for w in workloads.values():
         w["desired"] = max(w["ready"], 1)
     w["containers"] = list(w["containers"].values())
     out.append(w)
-json.dump({"cluster": cluster, "nodes": nodes, "workloads": out}, sys.stdout)
+routes = {}
+if len(sys.argv) > 3:
+    try:
+        with open(sys.argv[3]) as f:
+            for r in json.load(f).get("items", []):
+                ns = r["metadata"]["namespace"]
+                hosts = list(r.get("spec", {}).get("hostnames", []))
+                hosts += [rule["host"] for rule in r.get("spec", {}).get("rules", []) if rule.get("host")]
+                if hosts:
+                    routes.setdefault(ns, set()).update(hosts)
+    except (OSError, ValueError, KeyError):
+        pass
+json.dump({"cluster": cluster, "nodes": nodes, "workloads": out,
+           "routes": [{"namespace": ns, "hostnames": sorted(h)} for ns, h in sorted(routes.items())]}, sys.stdout)

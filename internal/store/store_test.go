@@ -337,7 +337,22 @@ func TestTopologyScene(t *testing.T) {
 	if _, err := s.Ingest(ctx, ci, "node", store.IngestOptions{Asset: "image:postgres"}, report(vuln("CVE-9", "openssl", "1", "2", "high")), nil); err != nil {
 		t.Fatal(err)
 	}
+	// a misconfiguration on the cluster that belongs to web/site, and a leaked secret in the site image
+	if _, err := s.Ingest(ctx, ci, "node", store.IngestOptions{Asset: "cluster:prod", ScanTypes: []string{"misconfig"}},
+		&ingest.Report{Format: "trivy", ScanTypes: []string{"misconfig"}, Findings: []ingest.Finding{
+			{Kind: "misconfig", AdvisoryID: "KSV-0014", Severity: "high", Target: "web/deployment/site: Deployment/site", Title: "ro fs"}}}, nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Ingest(ctx, ci, "node", store.IngestOptions{Asset: "image:ghcr.io/me/site", ScanTypes: []string{"secret"}},
+		&ingest.Report{Format: "trivy", ScanTypes: []string{"secret"}, Findings: []ingest.Finding{
+			{Kind: "secret", AdvisoryID: "aws-key", Severity: "critical", Target: "/app/.env", Title: "AWS key"}}}, nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.CreateAsset(ctx, store.AssetInput{Kind: "image", Identifier: "ghcr.io/me/idle"}); err != nil {
+		t.Fatal(err)
+	}
 	err := s.SaveTopology(ctx, ci, store.TopologyIn{Cluster: "prod",
+		Routes: []store.TopoRoute{{Namespace: "web", Hostnames: []string{"Shop.example.com", "shop.example.com"}}},
 		Nodes: []store.TopoNode{{Name: "n1", Host: "host:node1", CPU: "4", Memory: "8388608Ki", OS: "Ubuntu 24.04", Kubelet: "v1.37.2+k3s1"}},
 		Workloads: []store.TopoWorkld{
 			{Namespace: "db", Name: "postgres", Kind: "StatefulSet", Node: "n1", Ready: 1, Desired: 1,
@@ -367,8 +382,22 @@ func TestTopologyScene(t *testing.T) {
 	if db.Name != "db" || db.Status.Level != "p2" || db.Workloads[0].Images[0].AssetID == nil || db.Workloads[0].Images[0].Name != "postgres" {
 		t.Errorf("db group %+v", db)
 	}
-	if web.Status.Level != "unknown" || len(web.Workloads[0].Images) != 1 || web.Workloads[0].Images[0].AssetID != nil || web.Workloads[0].Ready != 0 {
-		t.Errorf("web group %+v", web)
+	site := web.Workloads[0]
+	if site.Status.Level != "p1" || site.Status.Kinds.Secret != 1 || site.Misconfig != 1 || site.Ready != 0 {
+		t.Errorf("site workload %+v", site)
+	}
+	if len(web.Domains) != 1 || web.Domains[0] != "shop.example.com" {
+		t.Errorf("domains %v", web.Domains)
+	}
+	run := map[string]bool{}
+	for _, im := range sc.Images {
+		run[im.Name] = im.Running
+	}
+	if !run["site"] || !run["postgres"] || run["idle"] {
+		t.Errorf("images running %v", run)
+	}
+	if len(sc.Sources) != 1 || sc.Sources[0].Name != "node" {
+		t.Errorf("sources %+v", sc.Sources)
 	}
 	if sc.Hosts[1].Name != "spare" || sc.Hosts[1].Subtitle != "no topology reported" {
 		t.Errorf("spare host %+v", sc.Hosts[1])

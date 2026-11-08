@@ -260,6 +260,7 @@ export type StatusLevel = 'p1' | 'p2' | 'p3' | 'p4' | 'ok' | 'unknown'
 export interface TopoStatus {
   level: StatusLevel
   open: OpenCounts
+  kinds?: { vuln: number; secret: number; misconfig: number; sast: number }
   stale: boolean
 }
 export interface TopoImage {
@@ -275,12 +276,14 @@ export interface TopoWorkload {
   kind: string
   ready: number
   desired: number
+  misconfig?: number
   status: TopoStatus
   images: TopoImage[]
 }
 export interface TopoGroup {
   id: string
   name: string
+  domains?: string[]
   status: TopoStatus
   workloads: TopoWorkload[]
 }
@@ -304,4 +307,6 @@ export interface Scene {
   generatedAt: string
   hosts: TopoHost[]
   external: TopoExternal[]
+  images?: { id: string; assetId: number; name: string; status: TopoStatus; running: boolean }[]
+  sources?: { name: string; lastSeenAt: string | null; stale: boolean }[]
 }

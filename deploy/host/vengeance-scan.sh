@@ -64,8 +64,10 @@ fi
 
 # 4. Topology for the infrastructure blueprint: nodes, namespaces, workloads, images.
 log "topology $CLUSTER_ASSET"
+kubectl get httproutes,ingresses -A -o json > "$work/routes.json" 2>/dev/null \
+  || kubectl get ingresses -A -o json > "$work/routes.json" 2>/dev/null || echo '{"items":[]}' > "$work/routes.json"
 if kubectl get nodes,pods,replicasets,deployments,statefulsets,daemonsets -A -o json \
-     | vengeance-topology "${CLUSTER_ASSET#cluster:}" "$HOST_ASSET" > "$work/topology.json"; then
+     | vengeance-topology "${CLUSTER_ASSET#cluster:}" "$HOST_ASSET" "$work/routes.json" > "$work/topology.json"; then
   curl -fsS -X POST -H "Authorization: Bearer $VENGEANCE_TOKEN" -H "Content-Type: application/json" \
     --data-binary @"$work/topology.json" "$VENGEANCE_URL/api/v1/topology" >/dev/null || { log "topology upload failed"; failed=1; }
 else

@@ -84,8 +84,12 @@ pub struct Node {
     pub anchor: Anchor,
     /// World size used to decide whether the label is readable (projected height, metres).
     pub label_size: f32,
-    /// Direction the element's front faces (horizontal unit vector).
+    /// Direction the element's front faces (horizontal unit vector; zero = any side).
     pub facing: Vec3,
+    /// Walk mode: what the metaphor means ("window broken — 3 P2 findings").
+    pub meaning: String,
+    /// Walk mode: aim readout title ("api · slowbloom").
+    pub title: String,
     pub level: Level,
     pub stale: bool,
     pub text: String,
@@ -101,8 +105,10 @@ pub struct Layout {
     pub bounds: Option<Aabb>,
     pub geo: Geo,
     pub has_stale: bool,
-    /// Present in walk mode: the datacenter room.
-    pub room: Option<crate::room::Room>,
+    /// Present in walk mode: the night city.
+    pub room: Option<crate::city::City>,
+    /// Walk mode: something animates (fire, smoke, searchlights) and needs continuous frames.
+    pub animated: bool,
 }
 
 pub(crate) fn st_flags(s: &Status) -> u32 {
@@ -215,6 +221,8 @@ impl Builder<'_> {
             anchor,
             label_size,
             facing,
+            meaning: String::new(),
+            title: String::new(),
             level: status.level,
             stale: status.stale,
             text,
@@ -328,7 +336,7 @@ pub(crate) fn build_host(b: &mut Builder, h: &crate::scene::Host, plan: &HostPla
         g.face(&sign, rgba(CYAN, 0.10), a, OCCLUDER);
         g.rect_z(sign.min.x + 0.015, sign.min.y + 0.015, sign.max.x - 0.015, sign.max.y - 0.015, sign.max.z + 0.0005, rgba(CYAN, 0.45), 0.7, a, 0);
         for x in [sign.min.x + 0.04, sign.max.x - 0.04] {
-            g.line(Vec3::new(x, sign.max.y, zf + 0.035), Vec3::new(x, crate::room::TRAY_Y, zf + 0.035), rgba(DIM, 0.6), 0.8, a, 0);
+            g.line(Vec3::new(x, sign.max.y, zf + 0.035), Vec3::new(x, 2.62, zf + 0.035), rgba(DIM, 0.6), 0.8, a, 0);
         }
         g.led(Vec3::new(sign.min.x + 0.035, sign_y, sign.max.z + 0.003), 0.014, h.status.level.rgb(), a, hf, 3.0);
     }

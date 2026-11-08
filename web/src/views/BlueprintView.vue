@@ -35,6 +35,7 @@ interface BlueprintApi {
   look?(dx: number, dy: number): void
   interact?(): void
   minimap?(): string
+  aim_info?(): string
 }
 interface Minimap {
   player: { x: number; z: number; heading: number }
@@ -64,11 +65,14 @@ const labels = ref<Label[]>([])
 const hoveredId = ref<string | undefined>()
 const selectedId = ref<string | undefined>()
 let bp: BlueprintApi | null = null
+let dismissed: string | undefined // a selection the user closed; the renderer still reports it
 let raf = 0
 let frameNo = 0
 let poll = 0
 let ro: ResizeObserver | null = null
 const walkSupported = ref(false)
+const aimInfo = ref<{ id: string; title: string; meaning: string } | null>(null)
+const showGuide = ref(false)
 const locked = ref(false)
 const minimapEl = ref<HTMLCanvasElement | null>(null)
 const finePointer = typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches
@@ -118,9 +122,18 @@ async function startViz() {
         }
         hoveredId.value = bp.hovered()
         const sel = bp.selected()
-        if (sel !== selectedId.value) selectedId.value = sel
+        if (sel !== dismissed) dismissed = undefined
+        if (sel !== selectedId.value && sel !== dismissed) selectedId.value = sel
       }
       if (view.value === 'walk' && frameNo % 6 === 0) drawMinimap()
+      if (view.value === 'walk' && frameNo % 2 === 0 && bp.aim_info) {
+        try {
+          const a = JSON.parse(bp.aim_info()) as { id: string; title: string; meaning: string } | null
+          aimInfo.value = a && a.id ? a : null
+        } catch {
+          aimInfo.value = null
+        }
+      }
       raf = requestAnimationFrame(loop)
     }
     raf = requestAnimationFrame(loop)
@@ -184,8 +197,13 @@ function onKey(e: KeyboardEvent) {
 }
 
 function focusId(id: string) {
+  dismissed = undefined
   selectedId.value = id
-  if (view.value === '3d') bp?.focus(id)
+  if (view.value !== 'list') bp?.focus(id)
+}
+function closePanel() {
+  dismissed = bp?.selected() ?? selectedId.value
+  selectedId.value = undefined
 }
 function resetView() {
   selectedId.value = undefined
@@ -208,7 +226,7 @@ watch(view, async (v, old) => {
 })
 
 // --- walk mode ---------------------------------------------------------------
-const WALK_KEYS = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ShiftLeft', 'ShiftRight', 'KeyE', 'Space'])
+const WALK_KEYS = new Set(['KeyH', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ShiftLeft', 'ShiftRight', 'KeyE', 'Space'])
 function enterWalk() {
   canvas.value?.requestPointerLock()
 }
@@ -228,12 +246,27 @@ function onWalkKey(e: KeyboardEvent, down: boolean) {
   if (down) {
     if (e.repeat) return
     if (e.code === 'KeyE') bp?.interact?.()
+    else if (e.code === 'KeyH') showGuide.value = !showGuide.value
     else bp?.key_down?.(e.code)
   } else bp?.key_up?.(e.code)
 }
 const onKeyDownWin = (e: KeyboardEvent) => onWalkKey(e, true)
 const onKeyUpWin = (e: KeyboardEvent) => onWalkKey(e, false)
 
+const CITY_GUIDE: [string, string][] = [
+  ['Building', 'a server, one floor per app'],
+  ['Window', 'a workload; dark panes = replicas not ready'],
+  ['Neon door', 'a domain, on the building that serves it'],
+  ['Library books', 'repositories'],
+  ['Harbour crates', 'container images; dusty = not running'],
+  ['Searchlight', 'a scan source; off = it went quiet'],
+  ['Fire and smoke', 'P1 findings'],
+  ['Broken glass', 'P2 findings'],
+  ['Cracks and grime', 'P3 and P4 findings'],
+  ['Open window or door', 'misconfiguration'],
+  ['Key in the lock', 'a leaked secret'],
+  ['Street lamps out', 'not scanned recently'],
+]
 const LEVEL_HEX: Record<StatusLevel, string> = { p1: '#ef4058', p2: '#f27a3a', p3: '#e6d34f', p4: '#7397c2', ok: '#5fb58d', unknown: '#5b6478' }
 function drawMinimap() {
   const el = minimapEl.value
@@ -403,7 +436,7 @@ function findingsLink(assetId: number | null) {
       </div>
       <div class="flex flex-wrap items-center gap-2">
         <label class="sr-only" for="bp-jump">Jump to</label>
-        <select v-if="view === '3d'" id="bp-jump" v-model="jump" class="input w-48" data-testid="blueprint-jump">
+        <select v-if="view !== 'list'" id="bp-jump" v-model="jump" class="input w-48" data-testid="blueprint-jump">
           <option value="">Jump to…</option>
           <option v-for="t in jumpTargets" :key="t.id" :value="t.id">{{ t.label }}</option>
         </select>
@@ -470,9 +503,18 @@ function findingsLink(assetId: number | null) {
           <div v-if="locked" class="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" aria-hidden="true">
             <div class="bp-crosshair" :class="{ 'bp-crosshair-on': aimed }" />
           </div>
-          <p v-if="locked && aimed" class="pointer-events-none absolute top-[calc(50%+1.6rem)] left-1/2 -translate-x-1/2 rounded-[3px] bg-ink-950/80 px-2 py-1 font-mono text-xs text-beam-hi" data-testid="blueprint-aim">
-            {{ aimed }} <span class="text-fog-400">· E to inspect</span>
-          </p>
+          <div v-if="locked && (aimInfo || aimed)" class="pointer-events-none absolute top-[calc(50%+1.6rem)] left-1/2 max-w-[28rem] -translate-x-1/2 rounded-[3px] bg-ink-950/85 px-2.5 py-1.5 text-center font-mono text-xs" data-testid="blueprint-aim">
+            <p class="text-beam-hi">{{ aimInfo?.title ?? aimed }}</p>
+            <p v-if="aimInfo?.meaning" class="text-fog-200">{{ aimInfo.meaning }}</p>
+            <p class="text-fog-500">E to inspect</p>
+          </div>
+          <aside v-if="showGuide" class="absolute bottom-12 left-2 z-[260] w-72 rounded-[4px] border border-ink-600 bg-ink-950/90 p-3 text-xs text-fog-300" data-testid="blueprint-guide">
+            <p class="eyebrow mb-1.5">City guide <span class="text-fog-500">(H)</span></p>
+            <ul class="space-y-1">
+              <li v-for="g in CITY_GUIDE" :key="g[0]"><span class="text-fog-100">{{ g[0] }}</span> <span class="text-fog-500">→</span> {{ g[1] }}</li>
+            </ul>
+          </aside>
+          <button v-if="!showGuide" type="button" class="absolute bottom-12 left-2 z-[260] rounded-[4px] border border-ink-600 bg-ink-950/85 px-2 py-1 text-xs text-fog-300" data-testid="blueprint-guide-open" @click="showGuide = true">City guide (H)</button>
           <canvas ref="minimapEl" class="pointer-events-none absolute top-2 right-2 z-[250] h-40 w-40 rounded-[4px] border border-ink-600 bg-ink-950/75" aria-label="Floor plan" data-testid="blueprint-minimap" />
           <button
             v-if="!locked"
@@ -481,8 +523,9 @@ function findingsLink(assetId: number | null) {
             data-testid="blueprint-enter-walk"
             @click="enterWalk"
           >
-            <span class="font-display text-xl tracking-wider text-fog-100 uppercase">Enter the datacenter</span>
-            <span class="font-mono text-xs text-fog-400">WASD to walk · mouse to look · Shift to run · E or click to inspect · Esc to leave</span>
+            <span class="font-display text-xl tracking-wider text-fog-100 uppercase">Walk the city</span>
+            <span class="max-w-md text-sm text-fog-300">Every building is a server, every floor an app, every window a workload. Fires, broken glass and dark streets are your findings.</span>
+            <span class="font-mono text-xs text-fog-400">WASD to walk · mouse to look · Shift to run · E or click to inspect · H for the city guide · Esc to leave</span>
           </button>
         </template>
         <p v-if="view === '3d'" class="absolute top-2 right-2 hidden rounded-[4px] bg-ink-950/80 px-2.5 py-1.5 text-[0.7rem] text-fog-500 xl:block">
@@ -535,7 +578,7 @@ function findingsLink(assetId: number | null) {
             <h2 class="font-display text-xl tracking-wide break-words text-fog-100 uppercase">{{ found.name }}</h2>
             <p class="text-xs break-all text-fog-400">{{ found.sub }}</p>
           </div>
-          <button type="button" class="btn btn-ghost btn-sm" aria-label="Close details" @click="selectedId = undefined"><AppIcon name="x" :size="14" /></button>
+          <button type="button" class="btn btn-ghost btn-sm" aria-label="Close details" @click="closePanel"><AppIcon name="x" :size="14" /></button>
         </div>
         <p class="mt-3 flex items-center gap-2 text-sm text-fog-200">
           <span class="bp-led" :style="{ background: LEVEL_VAR[found.status.level] }" />{{ LEVEL_LABEL[found.status.level] }}

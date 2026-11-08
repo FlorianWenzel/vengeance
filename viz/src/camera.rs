@@ -87,7 +87,7 @@ impl Camera {
     /// Fog start/end distances.
     pub fn fog(&self, scene_radius: f32) -> (f32, f32) {
         match self.fps {
-            Some(_) => (2.5, 22.0),
+            Some(_) => (10.0, 150.0),
             None => {
                 let d = self.pose.dist;
                 (d * 0.9 + 0.5, d * 2.6 + scene_radius * 1.5 + 2.0)
@@ -97,7 +97,7 @@ impl Camera {
 
     pub fn near_far(&self) -> (f32, f32) {
         if self.fps.is_some() {
-            return (0.03, 80.0);
+            return (0.05, 400.0);
         }
         let near = (self.pose.dist * 0.02).clamp(0.005, 0.5);
         (near, self.pose.dist * 6.0 + self.max_dist * 2.0 + 20.0)
