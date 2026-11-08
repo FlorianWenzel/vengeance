@@ -30,6 +30,8 @@ pub struct Camera {
     pub fovy: f32,
     pub aspect: f32,
     pub max_dist: f32,
+    /// First-person override (eye, forward). The orbit pose is kept untouched underneath.
+    pub fps: Option<(Vec3, Vec3)>,
     flight: Option<(Pose, Pose, f64, f64)>,
 }
 
@@ -59,6 +61,7 @@ impl Default for Camera {
             fovy: 38f32.to_radians(),
             aspect: 1.5,
             max_dist: 60.0,
+            fps: None,
             flight: None,
         }
     }
@@ -66,21 +69,50 @@ impl Default for Camera {
 
 impl Camera {
     pub fn eye(&self) -> Vec3 {
-        self.pose.eye()
+        match self.fps {
+            Some((e, _)) => e,
+            None => self.pose.eye(),
+        }
+    }
+
+    /// Vertical field of view in use (wider when walking).
+    pub fn fov(&self) -> f32 {
+        if self.fps.is_some() {
+            64f32.to_radians()
+        } else {
+            self.fovy
+        }
+    }
+
+    /// Fog start/end distances.
+    pub fn fog(&self, scene_radius: f32) -> (f32, f32) {
+        match self.fps {
+            Some(_) => (2.5, 22.0),
+            None => {
+                let d = self.pose.dist;
+                (d * 0.9 + 0.5, d * 2.6 + scene_radius * 1.5 + 2.0)
+            }
+        }
     }
 
     pub fn near_far(&self) -> (f32, f32) {
+        if self.fps.is_some() {
+            return (0.03, 80.0);
+        }
         let near = (self.pose.dist * 0.02).clamp(0.005, 0.5);
         (near, self.pose.dist * 6.0 + self.max_dist * 2.0 + 20.0)
     }
 
     pub fn view(&self) -> Mat4 {
-        Mat4::look_at_rh(self.eye(), self.pose.target, Vec3::Y)
+        match self.fps {
+            Some((e, f)) => Mat4::look_at_rh(e, e + f, Vec3::Y),
+            None => Mat4::look_at_rh(self.eye(), self.pose.target, Vec3::Y),
+        }
     }
 
     pub fn proj(&self) -> Mat4 {
         let (n, f) = self.near_far();
-        Mat4::perspective_rh_gl(self.fovy, self.aspect.max(0.01), n, f)
+        Mat4::perspective_rh_gl(self.fov(), self.aspect.max(0.01), n, f)
     }
 
     pub fn view_proj(&self) -> Mat4 {
@@ -167,6 +199,7 @@ impl Camera {
         let fits = |dist: f32| -> bool {
             let mut cam = self.clone();
             cam.flight = None;
+            cam.fps = None;
             cam.pose = Pose { dist, ..pose };
             let vp = cam.view_proj();
             (0..8u8).all(|i| {

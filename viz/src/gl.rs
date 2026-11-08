@@ -214,6 +214,9 @@ void main() {
 const BG_FS: &str = r#"
 uniform mat4 uInvVP;
 uniform vec4 uScene; // center xz, radius, unused
+uniform float uWalk;
+uniform vec3 uRoomMin;
+uniform vec3 uRoomMax;
 in vec2 vNdc;
 out vec4 outColor;
 float grid(vec2 p, float s, float w) {
@@ -224,7 +227,58 @@ float grid(vec2 p, float s, float w) {
   float fade = 1.0 - smoothstep(0.12, 0.45, max(fw.x, fw.y));
   return (1.0 - min(l / w, 1.0)) * fade;
 }
+// Light pools under the ceiling fixtures (same 2.4 m grid as room.rs).
+float pool(vec2 p, float r) {
+  vec2 d = (fract((p - uRoomMin.xz) / 2.4) - 0.5) * 2.4 * vec2(0.55, 1.0);
+  return exp(-dot(d, d) / r);
+}
+vec3 room(vec3 dir) {
+  vec3 tA = (uRoomMin - uEye) / dir;
+  vec3 tB = (uRoomMax - uEye) / dir;
+  vec3 tf = max(tA, tB);
+  float t = min(min(tf.x, tf.y), tf.z);
+  vec3 hit = uEye + dir * t;
+  vec3 col;
+  if (t == tf.y && dir.y < 0.0) {
+    // Raised floor: 600 mm tiles, light pools, a glow band under the rack fronts.
+    col = vec3(0.035, 0.075, 0.130);
+    col += vec3(0.07, 0.15, 0.24) * pool(hit.xz, 1.6);
+    float tile = grid(hit.xz - uRoomMin.xz, 0.6, 1.3);
+    col += vec3(0.25, 0.55, 0.85) * tile * 0.28;
+    float fine = grid(hit.xz - uRoomMin.xz + 0.3, 0.6, 0.6);
+    col += vec3(0.20, 0.45, 0.70) * fine * 0.04;
+  } else if (t == tf.y) {
+    // Ceiling: dim tiles, glow around fixtures.
+    col = vec3(0.022, 0.045, 0.085);
+    col += vec3(0.12, 0.22, 0.32) * pool(hit.xz, 0.5);
+    col += vec3(0.20, 0.40, 0.65) * grid(hit.xz - uRoomMin.xz, 0.6, 1.0) * 0.10;
+  } else {
+    // Walls: panel joints every 1.2 m, brighter towards the light.
+    vec2 w = t == tf.x ? hit.zy : hit.xy;
+    col = mix(vec3(0.030, 0.062, 0.110), vec3(0.042, 0.085, 0.145), smoothstep(0.0, 3.0, hit.y));
+    vec2 q = w / vec2(1.2, 1.2);
+    vec2 fw = fwidth(q);
+    vec2 g = abs(fract(q - 0.5) - 0.5) / max(fw, vec2(1e-5));
+    col += vec3(0.20, 0.42, 0.65) * (1.0 - min(g.x / 1.0, 1.0)) * 0.12;
+    col += vec3(0.25, 0.55, 0.85) * (1.0 - min(abs(hit.y - 0.12) / max(fwidth(hit.y), 1e-5), 1.0)) * 0.18;
+  }
+  float fogK = clamp((t - uFog.x) / max(uFog.y - uFog.x, 0.001), 0.0, 1.0);
+  return mix(col, vec3(0.018, 0.038, 0.070), fogK * 0.8);
+}
 void main() {
+  if (uWalk > 0.5) {
+    vec4 a = uInvVP * vec4(vNdc, -1.0, 1.0);
+    vec4 b = uInvVP * vec4(vNdc, 1.0, 1.0);
+    vec3 dir = normalize(b.xyz / b.w - a.xyz / a.w);
+    if (abs(dir.x) < 1e-5) dir.x = 1e-5;
+    if (abs(dir.y) < 1e-5) dir.y = -1e-5;
+    if (abs(dir.z) < 1e-5) dir.z = 1e-5;
+    vec3 col = room(dir);
+    vec2 v = vNdc * vec2(0.9, 1.0);
+    col *= 1.0 - 0.4 * smoothstep(0.5, 1.6, dot(v, v));
+    outColor = vec4(col, 1.0);
+    return;
+  }
   vec3 top = vec3(0.020, 0.043, 0.082);
   vec3 bot = vec3(0.035, 0.078, 0.140);
   vec3 col = mix(bot, top, smoothstep(-1.0, 1.0, vNdc.y));
@@ -270,8 +324,10 @@ impl Prog {
     }
 }
 
-const UNIFORMS: [&str; 14] =
-    ["uVP", "uEye", "uViewport", "uDpr", "uTime", "uMotion", "uFog", "uHidden", "uAlpha", "uDepthOnly", "uProjY", "uInvVP", "uScene", "_"];
+const UNIFORMS: [&str; 16] = [
+    "uVP", "uEye", "uViewport", "uDpr", "uTime", "uMotion", "uFog", "uHidden", "uAlpha", "uDepthOnly", "uProjY", "uInvVP", "uScene", "uWalk", "uRoomMin",
+    "uRoomMax",
+];
 
 struct Batch {
     vao: WebGlVertexArrayObject,
@@ -446,9 +502,9 @@ impl Renderer {
         gl.uniform1f(p.loc("uDpr"), e.dpr);
         gl.uniform1f(p.loc("uTime"), (e.now % 1.0e7) as f32);
         gl.uniform1f(p.loc("uMotion"), if e.reduced_motion { 0.0 } else { 1.0 });
-        let d = e.cam.pose.dist;
         let r = e.layout.bounds.map(|b| b.radius()).unwrap_or(2.0);
-        gl.uniform2f(p.loc("uFog"), d * 0.9 + 0.5, d * 2.6 + r * 1.5 + 2.0);
+        let (f0, f1) = e.cam.fog(r);
+        gl.uniform2f(p.loc("uFog"), f0, f1);
     }
 
     pub fn draw(&mut self, e: &Engine) {
@@ -487,6 +543,15 @@ impl Renderer {
         gl.uniform_matrix4fv_with_f32_array(self.bg.loc("uInvVP"), false, &inv);
         let (c, r) = e.layout.bounds.map(|b| (b.center(), b.radius())).unwrap_or((glam::Vec3::ZERO, 3.0));
         gl.uniform4f(self.bg.loc("uScene"), c.x, c.z, r * 1.2, 0.0);
+        match e.layout.room.as_ref() {
+            Some(room) => {
+                let (a, b) = (room.bounds.min, room.bounds.max);
+                gl.uniform1f(self.bg.loc("uWalk"), 1.0);
+                gl.uniform3f(self.bg.loc("uRoomMin"), a.x, a.y, a.z);
+                gl.uniform3f(self.bg.loc("uRoomMax"), b.x, b.y, b.z);
+            }
+            None => gl.uniform1f(self.bg.loc("uWalk"), 0.0),
+        }
         gl.bind_vertex_array(Some(&self.bg_vao));
         gl.draw_arrays(GL::TRIANGLES, 0, 3);
 

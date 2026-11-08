@@ -50,6 +50,7 @@ pub enum Anchor {
     Right,
     Inside,
     Below,
+    Center,
 }
 
 impl Anchor {
@@ -59,6 +60,7 @@ impl Anchor {
             Anchor::Right => "right",
             Anchor::Inside => "inside",
             Anchor::Below => "below",
+            Anchor::Center => "center",
         }
     }
 }
@@ -82,6 +84,8 @@ pub struct Node {
     pub anchor: Anchor,
     /// World size used to decide whether the label is readable (projected height, metres).
     pub label_size: f32,
+    /// Direction the element's front faces (horizontal unit vector).
+    pub facing: Vec3,
     pub level: Level,
     pub stale: bool,
     pub text: String,
@@ -97,9 +101,11 @@ pub struct Layout {
     pub bounds: Option<Aabb>,
     pub geo: Geo,
     pub has_stale: bool,
+    /// Present in walk mode: the datacenter room.
+    pub room: Option<crate::room::Room>,
 }
 
-fn st_flags(s: &Status) -> u32 {
+pub(crate) fn st_flags(s: &Status) -> u32 {
     let mut f = 0;
     if s.stale {
         f |= BLINK;
@@ -110,7 +116,7 @@ fn st_flags(s: &Status) -> u32 {
     f
 }
 
-fn tint(level: Level, base: [f32; 3], a: f32) -> Rgba {
+pub(crate) fn tint(level: Level, base: [f32; 3], a: f32) -> Rgba {
     match level {
         Level::P1 | Level::P2 => {
             let c = level.rgb();
@@ -128,16 +134,16 @@ fn group_units(n: usize) -> u32 {
     }
 }
 
-struct HostPlan {
+pub(crate) struct HostPlan {
     /// Group indices per bay.
     bays: Vec<Vec<usize>>,
-    rack_u: u32,
-    tower: bool,
-    width: f32,
-    depth: f32,
+    pub rack_u: u32,
+    pub tower: bool,
+    pub width: f32,
+    pub depth: f32,
 }
 
-fn plan_host(h: &crate::scene::Host) -> HostPlan {
+pub(crate) fn plan_host(h: &crate::scene::Host) -> HostPlan {
     if h.groups.is_empty() {
         return HostPlan { bays: vec![], rack_u: 0, tower: true, width: 0.26, depth: 0.58 };
     }
@@ -163,13 +169,15 @@ pub fn rack_height(rack_u: u32) -> f32 {
     PLINTH + rack_u as f32 * U + TOPCAP
 }
 
-struct Builder<'a> {
-    l: &'a mut Layout,
+pub(crate) struct Builder<'a> {
+    pub l: &'a mut Layout,
+    /// Walk mode: no floor dimensioning, hanging host signs instead.
+    pub walk: bool,
 }
 
 impl Builder<'_> {
     #[allow(clippy::too_many_arguments)]
-    fn add(
+    pub(crate) fn add(
         &mut self,
         id: &str,
         kind: Kind,
@@ -185,6 +193,9 @@ impl Builder<'_> {
         sub: String,
     ) -> usize {
         let idx = self.l.nodes.len();
+        let g = &self.l.geo;
+        let (body, label_at, lod) = (g.tb(&body), g.t(label_at), g.tl(lod));
+        let facing = if g.flip.is_some() { Vec3::NEG_Z } else { Vec3::Z };
         let depth = parent.map(|p| self.l.nodes[p].depth + 1).unwrap_or(0);
         // Ids must be unique for lookup; a duplicate keeps the first mapping.
         let id = if id.is_empty() { format!("anon:{idx}") } else { id.to_string() };
@@ -203,6 +214,7 @@ impl Builder<'_> {
             label_at,
             anchor,
             label_size,
+            facing,
             level: status.level,
             stale: status.stale,
             text,
@@ -215,7 +227,7 @@ impl Builder<'_> {
         idx
     }
 
-    fn grow_pick(&mut self, idx: usize) {
+    pub(crate) fn grow_pick(&mut self, idx: usize) {
         let mut cur = idx;
         while let Some(p) = self.l.nodes[cur].parent {
             let pk = self.l.nodes[cur].pick;
@@ -254,7 +266,7 @@ pub fn build(scene: &Scene) -> Layout {
     let _ = max_w;
 
     {
-        let mut b = Builder { l: &mut layout };
+        let mut b = Builder { l: &mut layout, walk: false };
         for (hi, h) in scene.hosts.iter().enumerate() {
             let (x0, zc) = placements[hi];
             build_host(&mut b, h, &plans[hi], x0, zc);
@@ -265,7 +277,7 @@ pub fn build(scene: &Scene) -> Layout {
     layout.hosts = layout.roots.clone();
     let hb = host_bounds.unwrap_or(Aabb::new(Vec3::new(-0.5, 0.0, -0.5), Vec3::new(0.5, 1.0, 0.5)));
     {
-        let mut b = Builder { l: &mut layout };
+        let mut b = Builder { l: &mut layout, walk: false };
         build_externals(&mut b, scene, &hb);
     }
 
@@ -288,22 +300,43 @@ fn floor_marks(g: &mut Geo, bb: &Aabb) {
     }
 }
 
-fn build_host(b: &mut Builder, h: &crate::scene::Host, plan: &HostPlan, x0: f32, zc: f32) {
+pub(crate) fn build_host(b: &mut Builder, h: &crate::scene::Host, plan: &HostPlan, x0: f32, zc: f32) {
     let name = if h.name.is_empty() { h.id.clone() } else { h.name.clone() };
     let zf = zc + plan.depth * 0.5;
     let zb = zc - plan.depth * 0.5;
     let x1 = x0 + plan.width;
     let height = if plan.tower { 0.50 } else { rack_height(plan.rack_u) };
     let body = Aabb::new(Vec3::new(x0, 0.0, zb), Vec3::new(x1, height, zf));
-    let label_at = Vec3::new((x0 + x1) * 0.5, height + 0.06, zf);
-    let hi = b.add(&h.id, Kind::Host, "host", None, body, Lod::ALWAYS, label_at, Anchor::Above, 0.0, &h.status, name, h.subtitle.clone());
+    let walk = b.walk;
+    let sign_y = height.max(1.6) + 0.30;
+    let (label_at, anchor) = if walk {
+        (Vec3::new((x0 + x1) * 0.5, sign_y, zf + 0.06), Anchor::Center)
+    } else {
+        (Vec3::new((x0 + x1) * 0.5, height + 0.06, zf), Anchor::Above)
+    };
+    let hi = b.add(&h.id, Kind::Host, "host", None, body, Lod::ALWAYS, label_at, anchor, 0.0, &h.status, name, h.subtitle.clone());
     let g = &mut b.l.geo;
     let a = Lod::ALWAYS;
     let det = Lod::far(body.center(), DETAIL_FAR);
     let hf = st_flags(&h.status);
+    if walk {
+        // Hanging sign above the rack front, suspended from the cable tray.
+        let cx = (x0 + x1) * 0.5;
+        let sw = (plan.width * 0.5).clamp(0.26, 0.5);
+        let sign = Aabb::new(Vec3::new(cx - sw, sign_y - 0.09, zf + 0.02), Vec3::new(cx + sw, sign_y + 0.09, zf + 0.05));
+        g.box_edges(&sign, rgba(PALE, 0.9), 1.2, a, 0);
+        g.face(&sign, rgba(CYAN, 0.10), a, OCCLUDER);
+        g.rect_z(sign.min.x + 0.015, sign.min.y + 0.015, sign.max.x - 0.015, sign.max.y - 0.015, sign.max.z + 0.0005, rgba(CYAN, 0.45), 0.7, a, 0);
+        for x in [sign.min.x + 0.04, sign.max.x - 0.04] {
+            g.line(Vec3::new(x, sign.max.y, zf + 0.035), Vec3::new(x, crate::room::TRAY_Y, zf + 0.035), rgba(DIM, 0.6), 0.8, a, 0);
+        }
+        g.led(Vec3::new(sign.min.x + 0.035, sign_y, sign.max.z + 0.003), 0.014, h.status.level.rgb(), a, hf, 3.0);
+    }
 
     // Floor footprint, front service zone and dimension lines (drawn the same for racks and towers).
     let dc = rgba(DIM, 0.75);
+    let hx = x0 - 0.14;
+    if !walk {
     g.rect_y(x0 - 0.05, zb - 0.05, x1 + 0.05, zf + 0.05, 0.001, rgba(DIM, 0.45), 0.8, a, DASH | NO_HIDDEN);
     g.rect_y(x0, zf + 0.05, x1, zf + 0.75, 0.001, rgba(DIM, 0.22), 0.8, det, DASH | NO_HIDDEN);
     // Width (front, on the floor).
@@ -317,10 +350,10 @@ fn build_host(b: &mut Builder, h: &crate::scene::Host, plan: &HostPlan, x0: f32,
     g.line(Vec3::new(x1 + 0.02, 0.001, zb), Vec3::new(dx + 0.04, 0.001, zb), dc, 0.7, det, NO_HIDDEN);
     g.dimension(Vec3::new(dx, 0.001, zf), Vec3::new(dx, 0.001, zb), Vec3::X, dc, det);
     // Height (left of the front face).
-    let hx = x0 - 0.14;
     g.line(Vec3::new(x0 - 0.02, 0.0, zf), Vec3::new(hx - 0.04, 0.0, zf), dc, 0.7, det, NO_HIDDEN);
     g.line(Vec3::new(x0 - 0.02, height, zf), Vec3::new(hx - 0.04, height, zf), dc, 0.7, det, NO_HIDDEN);
     g.dimension(Vec3::new(hx, 0.0, zf), Vec3::new(hx, height, zf), Vec3::X, dc, det);
+    }
 
     let frame = rgba(CYAN, 0.95);
     if plan.tower {
@@ -414,7 +447,7 @@ fn build_host(b: &mut Builder, h: &crate::scene::Host, plan: &HostPlan, x0: f32,
         let _ = filled_u;
     }
     let tick_c = rgba(DIM, 0.75);
-    let children = b.l.nodes[hi].children.clone();
+    let children = if walk { vec![] } else { b.l.nodes[hi].children.clone() };
     for c in children {
         let y = b.l.nodes[c].body.max.y;
         b.l.geo.line(Vec3::new(hx - 0.015, y, zf), Vec3::new(hx + 0.015, y, zf), tick_c, 0.7, det, NO_HIDDEN);

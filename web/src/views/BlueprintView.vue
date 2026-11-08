@@ -29,6 +29,17 @@ interface BlueprintApi {
   labels(): string
   set_reduced_motion(on: boolean): void
   free(): void
+  set_mode?(mode: 'orbit' | 'walk'): void
+  key_down?(code: string): void
+  key_up?(code: string): void
+  look?(dx: number, dy: number): void
+  interact?(): void
+  minimap?(): string
+}
+interface Minimap {
+  player: { x: number; z: number; heading: number }
+  bounds: { minX: number; minZ: number; maxX: number; maxZ: number }
+  items: { id: string; kind: string; x: number; z: number; w: number; d: number; level?: string }[]
 }
 interface Label {
   id: string
@@ -39,14 +50,14 @@ interface Label {
   depth: number
   level?: string
   kind: string
-  anchor?: 'above' | 'right' | 'inside' | 'below'
+  anchor?: 'above' | 'right' | 'inside' | 'below' | 'center'
 }
 
 const scene = shallowRef<Scene | null>(null)
 const loading = ref(true)
 const loadError = ref<string | null>(null)
 const vizError = ref<string | null>(null)
-const view = ref<'3d' | 'list'>(vizModules['../viz/pkg/blueprint.js'] ? '3d' : 'list')
+const view = ref<'3d' | 'walk' | 'list'>(vizModules['../viz/pkg/blueprint.js'] ? '3d' : 'list')
 const canvas = ref<HTMLCanvasElement | null>(null)
 const stage = ref<HTMLDivElement | null>(null)
 const labels = ref<Label[]>([])
@@ -57,6 +68,10 @@ let raf = 0
 let frameNo = 0
 let poll = 0
 let ro: ResizeObserver | null = null
+const walkSupported = ref(false)
+const locked = ref(false)
+const minimapEl = ref<HTMLCanvasElement | null>(null)
+const finePointer = typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches
 
 async function load() {
   try {
@@ -86,6 +101,8 @@ async function startViz() {
     await mod.default()
     bp = new mod.Blueprint(canvas.value)
     bp.set_reduced_motion(window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+    walkSupported.value = finePointer && typeof bp.set_mode === 'function' && 'requestPointerLock' in canvas.value
+    bp.set_mode?.(view.value === 'walk' && walkSupported.value ? 'walk' : 'orbit')
     sizeCanvas()
     bp.set_scene(JSON.stringify(scene.value))
     ro = new ResizeObserver(sizeCanvas)
@@ -103,6 +120,7 @@ async function startViz() {
         const sel = bp.selected()
         if (sel !== selectedId.value) selectedId.value = sel
       }
+      if (view.value === 'walk' && frameNo % 6 === 0) drawMinimap()
       raf = requestAnimationFrame(loop)
     }
     raf = requestAnimationFrame(loop)
@@ -133,23 +151,32 @@ function local(e: PointerEvent | WheelEvent) {
   return [e.clientX - r.left, e.clientY - r.top] as const
 }
 function onDown(e: PointerEvent) {
+  if (view.value === 'walk') {
+    if (locked.value) bp?.interact?.()
+    else enterWalk()
+    return
+  }
   canvas.value?.setPointerCapture(e.pointerId)
   const [x, y] = local(e)
   bp?.pointer_down(x, y, e.button)
 }
 function onMove(e: PointerEvent) {
+  if (view.value === 'walk') return
   const [x, y] = local(e)
   bp?.pointer_move(x, y)
 }
 function onUp(e: PointerEvent) {
+  if (view.value === 'walk') return
   const [x, y] = local(e)
   bp?.pointer_up(x, y, e.button)
 }
 function onWheel(e: WheelEvent) {
+  if (view.value === 'walk') return
   const [x, y] = local(e)
   bp?.wheel(e.deltaY, x, y)
 }
 function onKey(e: KeyboardEvent) {
+  if (view.value === 'walk') return
   if (['Escape', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
     e.preventDefault()
     bp?.key(e.key)
@@ -165,22 +192,139 @@ function resetView() {
   bp?.reset_view()
 }
 
-watch(view, async (v) => {
-  if (v === '3d') {
-    await nextTick()
-    startViz()
-  } else stopViz()
+watch(view, async (v, old) => {
+  if (v === 'list') {
+    exitWalk()
+    stopViz()
+    return
+  }
+  await nextTick()
+  if (!bp) await startViz()
+  if (v === 'walk') bp?.set_mode?.('walk')
+  else if (old === 'walk') {
+    exitWalk()
+    bp?.set_mode?.('orbit')
+  }
 })
 
+// --- walk mode ---------------------------------------------------------------
+const WALK_KEYS = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ShiftLeft', 'ShiftRight', 'KeyE', 'Space'])
+function enterWalk() {
+  canvas.value?.requestPointerLock()
+}
+function exitWalk() {
+  if (document.pointerLockElement) document.exitPointerLock()
+}
+function onLockChange() {
+  locked.value = document.pointerLockElement === canvas.value
+  if (!locked.value) for (const k of WALK_KEYS) bp?.key_up?.(k) // release held keys
+}
+function onLookMove(e: MouseEvent) {
+  if (locked.value) bp?.look?.(e.movementX, e.movementY)
+}
+function onWalkKey(e: KeyboardEvent, down: boolean) {
+  if (view.value !== 'walk' || !locked.value || !WALK_KEYS.has(e.code)) return
+  e.preventDefault()
+  if (down) {
+    if (e.repeat) return
+    if (e.code === 'KeyE') bp?.interact?.()
+    else bp?.key_down?.(e.code)
+  } else bp?.key_up?.(e.code)
+}
+const onKeyDownWin = (e: KeyboardEvent) => onWalkKey(e, true)
+const onKeyUpWin = (e: KeyboardEvent) => onWalkKey(e, false)
+
+const LEVEL_HEX: Record<StatusLevel, string> = { p1: '#ef4058', p2: '#f27a3a', p3: '#e6d34f', p4: '#7397c2', ok: '#5fb58d', unknown: '#5b6478' }
+function drawMinimap() {
+  const el = minimapEl.value
+  if (!el || !bp?.minimap) return
+  let m: Minimap
+  try {
+    m = JSON.parse(bp.minimap()) as Minimap
+  } catch {
+    return
+  }
+  const ctx = el.getContext('2d')
+  if (!ctx) return
+  const dpr = window.devicePixelRatio || 1
+  const W = el.clientWidth
+  const H = el.clientHeight
+  if (el.width !== Math.round(W * dpr)) {
+    el.width = Math.round(W * dpr)
+    el.height = Math.round(H * dpr)
+  }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+  ctx.clearRect(0, 0, W, H)
+  const bw = m.bounds.maxX - m.bounds.minX || 1
+  const bd = m.bounds.maxZ - m.bounds.minZ || 1
+  const sc = Math.min((W - 16) / bw, (H - 16) / bd)
+  const ox = (W - bw * sc) / 2
+  const oz = (H - bd * sc) / 2
+  const X = (x: number) => ox + (x - m.bounds.minX) * sc
+  const Z = (z: number) => oz + (z - m.bounds.minZ) * sc
+  ctx.lineWidth = 1
+  ctx.strokeStyle = 'rgba(120,190,255,0.45)'
+  ctx.strokeRect(X(m.bounds.minX), Z(m.bounds.minZ), bw * sc, bd * sc)
+  for (const it of m.items) {
+    const x0 = X(it.x - it.w / 2)
+    const z0 = Z(it.z - it.d / 2)
+    ctx.fillStyle = 'rgba(80,150,220,0.18)'
+    ctx.fillRect(x0, z0, it.w * sc, it.d * sc)
+    ctx.strokeStyle = it.id === hoveredId.value || it.id === selectedId.value ? '#f2b04a' : 'rgba(150,210,255,0.8)'
+    ctx.strokeRect(x0, z0, it.w * sc, it.d * sc)
+    ctx.fillStyle = LEVEL_HEX[(it.level as StatusLevel) || 'unknown'] ?? LEVEL_HEX.unknown
+    ctx.fillRect(X(it.x) - 2, Z(it.z) - 2, 4, 4)
+  }
+  ctx.save()
+  ctx.translate(X(m.player.x), Z(m.player.z))
+  ctx.rotate(m.player.heading)
+  ctx.fillStyle = '#f2b04a'
+  ctx.beginPath()
+  ctx.moveTo(0, -7)
+  ctx.lineTo(5, 5)
+  ctx.lineTo(0, 2)
+  ctx.lineTo(-5, 5)
+  ctx.closePath()
+  ctx.fill()
+  ctx.restore()
+}
+
+const aimed = computed(() => (view.value === 'walk' && hoveredId.value ? nameOf(hoveredId.value) : null))
+function nameOf(id: string): string | null {
+  const s = scene.value
+  if (!s) return null
+  for (const h of s.hosts) {
+    if (h.id === id) return h.name
+    for (const g of h.groups) {
+      if (g.id === id) return `${g.name} · ${h.name}`
+      for (const w of g.workloads) {
+        if (w.id === id) return `${w.name} · ${g.name}`
+        for (const i of w.images) if (i.id === id) return `${i.name} · ${w.name}`
+      }
+    }
+  }
+  return s.external.find((x) => x.id === id)?.name ?? null
+}
+
+
 onMounted(async () => {
+  document.addEventListener('pointerlockchange', onLockChange)
+  document.addEventListener('mousemove', onLookMove)
+  window.addEventListener('keydown', onKeyDownWin)
+  window.addEventListener('keyup', onKeyUpWin)
   await load()
   poll = window.setInterval(load, 60_000)
-  if (view.value === '3d' && hasTopology.value) {
+  if (view.value !== 'list' && hasTopology.value) {
     await nextTick()
     startViz()
   }
 })
 onBeforeUnmount(() => {
+  document.removeEventListener('pointerlockchange', onLockChange)
+  document.removeEventListener('mousemove', onLookMove)
+  window.removeEventListener('keydown', onKeyDownWin)
+  window.removeEventListener('keyup', onKeyUpWin)
+  exitWalk()
   clearInterval(poll)
   stopViz()
 })
@@ -268,6 +412,7 @@ function findingsLink(assetId: number | null) {
         </button>
         <div class="inline-flex rounded-[4px] border border-ink-600" role="group" aria-label="View">
           <button type="button" class="btn btn-sm !rounded-none !border-0" :class="view === '3d' ? 'bg-ink-700 text-fog-100' : 'btn-ghost'" :aria-pressed="view === '3d'" data-testid="blueprint-view-3d" @click="view = '3d'">3D</button>
+          <button v-if="walkSupported" type="button" class="btn btn-sm !rounded-none !border-0" :class="view === 'walk' ? 'bg-ink-700 text-fog-100' : 'btn-ghost'" :aria-pressed="view === 'walk'" data-testid="blueprint-view-walk" @click="view = 'walk'">Walk</button>
           <button type="button" class="btn btn-sm !rounded-none !border-0" :class="view === 'list' ? 'bg-ink-700 text-fog-100' : 'btn-ghost'" :aria-pressed="view === 'list'" data-testid="blueprint-view-list" @click="view = 'list'">List</button>
         </div>
       </div>
@@ -284,7 +429,7 @@ function findingsLink(assetId: number | null) {
       <p v-if="vizError" role="status" class="absolute top-2 left-2 z-10 rounded-[4px] border border-warn/40 bg-ink-900/90 px-3 py-2 text-sm text-warn">{{ vizError }}</p>
 
       <!-- 3D -->
-      <div v-if="view === '3d'" ref="stage" class="bp-stage relative min-w-0 flex-1 overflow-hidden rounded-[6px] border border-ink-600" data-testid="blueprint-stage">
+      <div v-if="view !== 'list'" ref="stage" class="bp-stage relative min-w-0 flex-1 overflow-hidden rounded-[6px] border border-ink-600" data-testid="blueprint-stage">
         <canvas
           ref="canvas"
           class="absolute inset-0 h-full w-full touch-none outline-none"
@@ -321,7 +466,26 @@ function findingsLink(assetId: number | null) {
           <li v-for="lv in legend" :key="lv" class="flex items-center gap-1.5"><span class="bp-led" :style="{ background: LEVEL_VAR[lv] }" />{{ LEVEL_LABEL[lv] }}</li>
           <li class="flex items-center gap-1.5 text-fog-500">blinking = scan missing or stale</li>
         </ul>
-        <p class="absolute top-2 right-2 hidden rounded-[4px] bg-ink-950/80 px-2.5 py-1.5 text-[0.7rem] text-fog-500 xl:block">
+        <template v-if="view === 'walk'">
+          <div v-if="locked" class="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" aria-hidden="true">
+            <div class="bp-crosshair" :class="{ 'bp-crosshair-on': aimed }" />
+          </div>
+          <p v-if="locked && aimed" class="pointer-events-none absolute top-[calc(50%+1.6rem)] left-1/2 -translate-x-1/2 rounded-[3px] bg-ink-950/80 px-2 py-1 font-mono text-xs text-beam-hi" data-testid="blueprint-aim">
+            {{ aimed }} <span class="text-fog-400">· E to inspect</span>
+          </p>
+          <canvas ref="minimapEl" class="pointer-events-none absolute top-2 right-2 h-40 w-40 rounded-[4px] border border-ink-600 bg-ink-950/75" aria-label="Floor plan" data-testid="blueprint-minimap" />
+          <button
+            v-if="!locked"
+            type="button"
+            class="absolute inset-0 m-auto flex h-fit w-fit flex-col items-center gap-2 rounded-[6px] border border-beam/50 bg-ink-950/85 px-6 py-5 text-center"
+            data-testid="blueprint-enter-walk"
+            @click="enterWalk"
+          >
+            <span class="font-display text-xl tracking-wider text-fog-100 uppercase">Enter the datacenter</span>
+            <span class="font-mono text-xs text-fog-400">WASD to walk · mouse to look · Shift to run · E or click to inspect · Esc to leave</span>
+          </button>
+        </template>
+        <p v-if="view === '3d'" class="absolute top-2 right-2 hidden rounded-[4px] bg-ink-950/80 px-2.5 py-1.5 text-[0.7rem] text-fog-500 xl:block">
           drag to orbit · shift-drag to pan · scroll to zoom · click to inspect · Esc to zoom out
         </p>
       </div>
@@ -460,6 +624,9 @@ function findingsLink(assetId: number | null) {
   color: #e3f1ff;
   text-shadow: 0 0 3px #050c18, 0 0 6px #050c18;
 }
+.bp-at-center {
+  translate: -50% -50%;
+}
 .bp-at-below {
   translate: -50% 4px;
 }
@@ -484,5 +651,35 @@ function findingsLink(assetId: number | null) {
 }
 .bp-led.bp-led {
   align-self: center;
+}
+</style>
+<style scoped>
+.bp-crosshair {
+  width: 18px;
+  height: 18px;
+  position: relative;
+}
+.bp-crosshair::before,
+.bp-crosshair::after {
+  content: '';
+  position: absolute;
+  background: rgb(207 230 255 / 0.85);
+  box-shadow: 0 0 4px #050c18;
+}
+.bp-crosshair::before {
+  left: 8px;
+  top: 0;
+  width: 2px;
+  height: 18px;
+}
+.bp-crosshair::after {
+  top: 8px;
+  left: 0;
+  width: 18px;
+  height: 2px;
+}
+.bp-crosshair-on::before,
+.bp-crosshair-on::after {
+  background: var(--color-beam);
 }
 </style>

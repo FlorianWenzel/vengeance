@@ -5,8 +5,11 @@
 
 pub mod camera;
 pub mod engine;
+mod engine_walk;
 pub mod geo;
 pub mod layout;
+pub mod room;
+pub mod walk;
 pub mod scene;
 
 #[cfg(target_arch = "wasm32")]
@@ -126,6 +129,40 @@ mod wasm {
 
         pub fn labels(&self) -> String {
             self.engine.labels_json()
+        }
+
+        /// 'orbit' | 'walk'. Walk spawns at the entrance facing the racks; orbit restores the
+        /// orbit camera as it was.
+        pub fn set_mode(&mut self, mode: &str) {
+            self.engine.set_mode(mode);
+        }
+
+        pub fn mode(&self) -> String {
+            self.engine.mode_name().to_string()
+        }
+
+        /// Walk mode: KeyboardEvent.code pressed (WASD / arrows move and turn, Shift runs, E interacts).
+        pub fn key_down(&mut self, code: &str) {
+            self.engine.key_down(code);
+        }
+
+        pub fn key_up(&mut self, code: &str) {
+            self.engine.key_up(code);
+        }
+
+        /// Walk mode: pointer-lock movementX / movementY in CSS pixels.
+        pub fn look(&mut self, dx: f32, dy: f32) {
+            self.engine.look(dx, dy);
+        }
+
+        /// Walk mode: select what the crosshair aims at.
+        pub fn interact(&mut self) {
+            self.engine.interact();
+        }
+
+        /// JSON floor plan with the player position for a 2D minimap.
+        pub fn minimap(&self) -> String {
+            self.engine.minimap_json()
         }
     }
 

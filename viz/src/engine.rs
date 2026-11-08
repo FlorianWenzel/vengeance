@@ -62,11 +62,23 @@ pub struct Engine {
     pub reduced_motion: bool,
     pub highlight: Geo,
     pub highlight_version: u64,
-    highlight_key: (Option<usize>, Option<usize>),
-    pointer: Option<Vec2>,
+    pub(crate) highlight_key: (Option<usize>, Option<usize>),
+    pub(crate) pointer: Option<Vec2>,
     drag: Option<Drag>,
-    dirty: bool,
-    has_scene: bool,
+    pub(crate) dirty: bool,
+    pub(crate) has_scene: bool,
+    pub mode: Mode,
+    pub(crate) scene: Scene,
+    pub walker: crate::walk::Walker,
+    pub(crate) last_now: Option<f64>,
+    pub(crate) orbit_framed: bool,
+    pub(crate) look_drag: Option<(Vec2, Vec2, bool)>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Mode {
+    Orbit,
+    Walk,
 }
 
 impl Default for Engine {
@@ -97,6 +109,12 @@ impl Engine {
             drag: None,
             dirty: true,
             has_scene: false,
+            mode: Mode::Orbit,
+            scene: Scene::default(),
+            walker: Default::default(),
+            last_now: None,
+            orbit_framed: false,
+            look_drag: None,
         }
     }
 
@@ -117,6 +135,13 @@ impl Engine {
     }
 
     pub fn apply_scene(&mut self, scene: &Scene) {
+        self.scene = scene.clone();
+        if self.mode == Mode::Walk {
+            self.rebuild();
+            self.after_walk_rebuild();
+            self.has_scene = true;
+            return;
+        }
         let id_of = |l: &Layout, i: Option<usize>| i.and_then(|i| l.nodes.get(i)).map(|n| n.id.clone());
         let focus_id = id_of(&self.layout, self.focus);
         let sel_id = id_of(&self.layout, self.selected);
@@ -136,7 +161,8 @@ impl Engine {
         self.cam.max_dist = r * 5.0 + 8.0;
 
         let new_hosts: Vec<String> = self.layout.hosts.iter().map(|&i| self.layout.nodes[i].id.clone()).collect();
-        if !had_content {
+        if !had_content || !self.orbit_framed {
+            self.orbit_framed = !self.layout.nodes.is_empty();
             self.cam.stop();
             self.cam.pose = self.overview_pose();
         } else if focus_id.is_some() && self.focus.is_none() {
@@ -213,11 +239,18 @@ impl Engine {
 
     pub fn focus_id(&mut self, id: &str) {
         if let Some(&i) = self.layout.index.get(id) {
-            self.focus_index(i);
+            if self.mode == Mode::Walk {
+                self.walk_to(i);
+            } else {
+                self.focus_index(i);
+            }
         }
     }
 
     pub fn reset_view(&mut self) {
+        if self.mode == Mode::Walk {
+            return self.walk_respawn(true);
+        }
         self.focus = None;
         let to = self.overview_pose();
         self.cam.fly_to(to, self.now, self.fly_ms());
@@ -255,6 +288,9 @@ impl Engine {
     }
 
     pub fn pointer_down(&mut self, x: f32, y: f32, button: i32) {
+        if self.mode == Mode::Walk {
+            return self.walk_pointer_down(x, y, button);
+        }
         let p = Vec2::new(x, y);
         let mode = if button == 0 && !self.shift { DragMode::Orbit } else { DragMode::Pan };
         self.drag = Some(Drag { start: p, last: p, button, mode, moved: false });
@@ -262,6 +298,9 @@ impl Engine {
     }
 
     pub fn pointer_move(&mut self, x: f32, y: f32) {
+        if self.mode == Mode::Walk {
+            return self.walk_pointer_move(x, y);
+        }
         let p = Vec2::new(x, y);
         if let Some(mut d) = self.drag {
             if !d.moved && p.distance(d.start) > DRAG_THRESHOLD {
@@ -283,6 +322,9 @@ impl Engine {
     }
 
     pub fn pointer_up(&mut self, x: f32, y: f32, button: i32) {
+        if self.mode == Mode::Walk {
+            return self.walk_pointer_up(x, y, button);
+        }
         let Some(d) = self.drag.take() else { return };
         if d.moved || d.button != button {
             return;
@@ -325,7 +367,7 @@ impl Engine {
     }
 
     pub fn wheel(&mut self, delta_y: f32, x: f32, y: f32) {
-        if !delta_y.is_finite() || delta_y == 0.0 {
+        if !delta_y.is_finite() || delta_y == 0.0 || self.mode == Mode::Walk {
             return;
         }
         self.cam.stop();
@@ -350,6 +392,9 @@ impl Engine {
     }
 
     pub fn key(&mut self, code: &str) {
+        if self.mode == Mode::Walk {
+            return;
+        }
         let mut to = self.cam.destination();
         let step = 15f32.to_radians();
         match code {
@@ -427,7 +472,10 @@ impl Engine {
         self.pick_ray(o, d)
     }
 
-    fn update_hover(&mut self) {
+    pub(crate) fn update_hover(&mut self) {
+        if self.mode == Mode::Walk {
+            return self.walk_update_hover();
+        }
         let h = if self.drag.is_some_and(|d| d.moved) { None } else { self.pointer.and_then(|p| self.pick(p.x, p.y)) };
         if h != self.hovered {
             self.hovered = h;
@@ -447,7 +495,12 @@ impl Engine {
 
     /// Advance animations. Returns true when a redraw is needed.
     pub fn update(&mut self, now: f64) -> bool {
+        let dt = self.last_now.map(|l| ((now - l) / 1000.0) as f32).unwrap_or(0.0);
+        self.last_now = Some(now);
         self.now = now;
+        if self.mode == Mode::Walk {
+            self.walk_update(now, dt);
+        }
         if self.cam.update(now) {
             self.dirty = true;
             if self.pointer.is_some() {
@@ -506,9 +559,12 @@ impl Engine {
     // ---- labels ------------------------------------------------------------------------
 
     pub fn labels(&self) -> Vec<Label<'_>> {
+        if self.mode == Mode::Walk {
+            return self.labels_walk();
+        }
         let vp = self.cam.view_proj();
         let eye = self.cam.eye();
-        let px_per_m_at_w = self.css_h * 0.5 / (self.cam.fovy * 0.5).tan();
+        let px_per_m_at_w = self.css_h * 0.5 / (self.cam.fov() * 0.5).tan();
         let margin = 40.0;
         let mut out = Vec::new();
         for (i, n) in self.layout.nodes.iter().enumerate() {
@@ -559,7 +615,7 @@ impl Engine {
     }
 
     /// Whether a host cabinet stands between the eye and `p` (hides labels of things behind racks).
-    fn behind_host(&self, eye: Vec3, p: Vec3) -> bool {
+    pub(crate) fn behind_host(&self, eye: Vec3, p: Vec3) -> bool {
         let d = p - eye;
         let len = d.length();
         if len < 1e-4 {

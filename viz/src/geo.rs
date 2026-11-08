@@ -110,10 +110,27 @@ pub struct Geo {
     pub lines: Vec<f32>,
     pub faces: Vec<f32>,
     pub leds: Vec<f32>,
+    /// When set, everything pushed is rotated 180 degrees about the vertical axis through this
+    /// point (racks in back-to-back rows face the other way).
+    pub flip: Option<Vec3>,
 }
 
 impl Geo {
+    pub fn t(&self, p: Vec3) -> Vec3 {
+        match self.flip {
+            Some(c) => Vec3::new(2.0 * c.x - p.x, p.y, 2.0 * c.z - p.z),
+            None => p,
+        }
+    }
+    pub fn tb(&self, b: &Aabb) -> Aabb {
+        Aabb::new(self.t(b.min), self.t(b.max))
+    }
+    pub fn tl(&self, l: Lod) -> Lod {
+        Lod { anchor: if l.far <= 0.0 && l.near <= 0.0 { l.anchor } else { self.t(l.anchor) }, ..l }
+    }
+
     pub fn clear(&mut self) {
+        self.flip = None;
         self.lines.clear();
         self.faces.clear();
         self.leds.clear();
@@ -129,6 +146,7 @@ impl Geo {
     }
 
     pub fn line(&mut self, a: Vec3, b: Vec3, c: Rgba, width: f32, lod: Lod, flags: u32) {
+        let (a, b, lod) = (self.t(a), self.t(b), self.tl(lod));
         self.lines.extend_from_slice(&[
             a.x, a.y, a.z, b.x, b.y, b.z, c[0], c[1], c[2], c[3], lod.anchor.x, lod.anchor.y, lod.anchor.z, lod.near,
             lod.far, flags as f32, width,
@@ -165,7 +183,15 @@ impl Geo {
         self.polyline(&pts, true, c, width, lod, flags);
     }
 
+    /// Rectangle in the plane x = const (wall-facing panels).
+    #[allow(clippy::too_many_arguments)]
+    pub fn rect_x(&mut self, x: f32, y0: f32, z0: f32, y1: f32, z1: f32, c: Rgba, width: f32, lod: Lod, flags: u32) {
+        let pts = [Vec3::new(x, y0, z0), Vec3::new(x, y0, z1), Vec3::new(x, y1, z1), Vec3::new(x, y1, z0)];
+        self.polyline(&pts, true, c, width, lod, flags);
+    }
+
     pub fn face(&mut self, b: &Aabb, c: Rgba, lod: Lod, flags: u32) {
+        let (b, lod) = (self.tb(b), self.tl(lod));
         let s = b.size();
         self.faces.extend_from_slice(&[
             b.min.x, b.min.y, b.min.z, s.x, s.y, s.z, c[0], c[1], c[2], c[3], lod.anchor.x, lod.anchor.y, lod.anchor.z,
@@ -174,6 +200,7 @@ impl Geo {
     }
 
     pub fn led(&mut self, p: Vec3, size: f32, rgb: [f32; 3], lod: Lod, flags: u32, min_px: f32) {
+        let (p, lod) = (self.t(p), self.tl(lod));
         self.leds.extend_from_slice(&[
             p.x, p.y, p.z, size, rgb[0], rgb[1], rgb[2], 1.0, lod.anchor.x, lod.anchor.y, lod.anchor.z, lod.near, lod.far,
             flags as f32, min_px, 0.0,
