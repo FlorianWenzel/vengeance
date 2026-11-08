@@ -1,0 +1,13 @@
+[Unit]
+Description=Vengeance nightly scan of this node
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/vengeance/scan.env
+ExecStart=/usr/local/bin/vengeance-scan
+Nice=10
+IOSchedulingClass=idle
+MemoryMax=2G
+TimeoutStartSec=3h

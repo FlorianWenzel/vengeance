@@ -19,5 +19,6 @@ FROM gcr.io/distroless/static-debian12:nonroot
 COPY --from=build /out/vengeance /usr/local/bin/vengeance
 USER nonroot:nonroot
 EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD ["/usr/local/bin/vengeance", "healthcheck"]
 ENTRYPOINT ["/usr/local/bin/vengeance"]
 CMD ["serve"]

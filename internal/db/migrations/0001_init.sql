@@ -125,7 +125,7 @@ INSERT INTO expectations (kind, scan_type, max_age_days) VALUES
   ('repository', 'vuln', 7), ('repository', 'secret', 7), ('repository', 'misconfig', 7),
   ('image', 'vuln', 7), ('image', 'secret', 7),
   ('host', 'vuln', 7),
-  ('cluster', 'vuln', 7), ('cluster', 'misconfig', 7);
+  ('cluster', 'misconfig', 7);
 
 CREATE TABLE channels (
   id          BIGSERIAL PRIMARY KEY,
