@@ -84,7 +84,7 @@ Pass `--scanners` whenever you can: auto-close only touches finding kinds the sc
 | `VENGEANCE_OIDC_ALLOWED_EMAILS` / `_ALLOWED_DOMAINS` | one of | who may sign in (comma separated) |
 | `VENGEANCE_OIDC_ALLOW_ALL` | | `true` if the provider already restricts who can sign in |
 | `VENGEANCE_SMTP_HOST`, `_PORT`, `_USER`, `_PASSWORD`, `_FROM`, `_TLS` | for email | `_TLS` is `starttls` (default), `tls` or `none` |
-| `VENGEANCE_KEV_URL` | | defaults to the CISA feed; `off` disables the daily sync |
+| `VENGEANCE_KEV_URL` | | defaults to CISA's catalogue on GitHub (cisagov/kev-data); `off` disables the daily sync |
 | `VENGEANCE_LISTEN` | | default `:8080` |
 | `VENGEANCE_MAX_REPORT_MIB` | | upload limit, default 64 |
 

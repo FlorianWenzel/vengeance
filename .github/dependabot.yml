@@ -17,3 +17,7 @@ updates:
   - package-ecosystem: docker
     directory: /
     schedule: { interval: weekly }
+    ignore:
+      # stay on LTS lines; odd Node majors are short-lived
+      - dependency-name: node
+        versions: ["25.x", "27.x", "29.x"]

@@ -21,7 +21,8 @@ import (
 	"github.com/FlorianWenzel/vengeance/web"
 )
 
-const defaultKEV = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+// CISA publishes the KEV catalogue to GitHub as well; it is more reliable from datacentre IPs.
+const defaultKEV = "https://raw.githubusercontent.com/cisagov/kev-data/develop/known_exploited_vulnerabilities.json"
 
 func env(k, def string) string {
 	if v := strings.TrimSpace(os.Getenv(k)); v != "" {
