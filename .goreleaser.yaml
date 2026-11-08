@@ -22,9 +22,9 @@ checksum:
 
 signs:
   - cmd: cosign
-    certificate: "${artifact}.pem"
-    signature: "${artifact}.sig"
-    args: ["sign-blob", "--yes", "--output-certificate=${certificate}", "--output-signature=${signature}", "${artifact}"]
+    # cosign v3: one Sigstore bundle (signature + certificate) per signed file
+    signature: "${artifact}.sigstore.json"
+    args: ["sign-blob", "--yes", "--bundle=${signature}", "${artifact}"]
     artifacts: checksum
 
 changelog:
