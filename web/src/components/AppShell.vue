@@ -30,6 +30,7 @@ const primary: NavItem[] = [
 const inventory: NavItem[] = [
   { to: '/assets', label: 'Assets', icon: 'server', testid: 'nav-assets', match: (p) => p.startsWith('/assets') },
   { to: '/projects', label: 'Projects', icon: 'folder', testid: 'nav-projects', match: (p) => p.startsWith('/projects') },
+  { to: '/blueprint', label: 'Blueprint', icon: 'boxes', testid: 'nav-blueprint', match: (p) => p.startsWith('/blueprint') },
   { to: '/coverage', label: 'Coverage', icon: 'radar', testid: 'nav-coverage', match: (p) => p.startsWith('/coverage') },
 ]
 const setup: NavItem[] = [

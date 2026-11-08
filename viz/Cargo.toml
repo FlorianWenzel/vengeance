@@ -1,0 +1,40 @@
+[package]
+name = "vengeance_blueprint"
+version = "0.1.0"
+edition = "2021"
+license = "AGPL-3.0-only"
+description = "3D infrastructure blueprint renderer for Vengeance (WebGL2 via wasm-bindgen)"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+glam = "0.30"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+# Must match the wasm-bindgen CLI used by scripts/build-viz.sh exactly.
+wasm-bindgen = "=0.2.129"
+js-sys = "0.3"
+web-sys = { version = "0.3", features = [
+  "console",
+  "Window",
+  "EventTarget",
+  "KeyboardEvent",
+  "HtmlCanvasElement",
+  "WebGl2RenderingContext",
+  "WebGlProgram",
+  "WebGlShader",
+  "WebGlBuffer",
+  "WebGlVertexArrayObject",
+  "WebGlUniformLocation",
+] }
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

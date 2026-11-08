@@ -254,3 +254,54 @@ export interface NotificationLog {
   sentAt: string | null
   error: string | null
 }
+
+// --- infrastructure blueprint (docs/topology.md) ---
+export type StatusLevel = 'p1' | 'p2' | 'p3' | 'p4' | 'ok' | 'unknown'
+export interface TopoStatus {
+  level: StatusLevel
+  open: OpenCounts
+  stale: boolean
+}
+export interface TopoImage {
+  id: string
+  assetId: number | null
+  name: string
+  ref: string
+  status: TopoStatus
+}
+export interface TopoWorkload {
+  id: string
+  name: string
+  kind: string
+  ready: number
+  desired: number
+  status: TopoStatus
+  images: TopoImage[]
+}
+export interface TopoGroup {
+  id: string
+  name: string
+  status: TopoStatus
+  workloads: TopoWorkload[]
+}
+export interface TopoHost {
+  id: string
+  assetId: number | null
+  name: string
+  subtitle: string
+  status: TopoStatus
+  cluster: string | null
+  groups: TopoGroup[]
+}
+export interface TopoExternal {
+  id: string
+  assetId: number
+  kind: AssetKind
+  name: string
+  status: TopoStatus
+}
+export interface Scene {
+  generatedAt: string
+  hosts: TopoHost[]
+  external: TopoExternal[]
+}

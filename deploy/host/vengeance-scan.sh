@@ -62,4 +62,14 @@ else
   log "cluster scan failed"; failed=1
 fi
 
+# 4. Topology for the infrastructure blueprint: nodes, namespaces, workloads, images.
+log "topology $CLUSTER_ASSET"
+if kubectl get nodes,pods,replicasets,deployments,statefulsets,daemonsets -A -o json \
+     | vengeance-topology "${CLUSTER_ASSET#cluster:}" "$HOST_ASSET" > "$work/topology.json"; then
+  curl -fsS -X POST -H "Authorization: Bearer $VENGEANCE_TOKEN" -H "Content-Type: application/json" \
+    --data-binary @"$work/topology.json" "$VENGEANCE_URL/api/v1/topology" >/dev/null || { log "topology upload failed"; failed=1; }
+else
+  log "topology collection failed"; failed=1
+fi
+
 exit $failed

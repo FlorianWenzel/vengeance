@@ -30,6 +30,15 @@ One container and a Postgres database. AGPL-3.0.
   findings, findings that became riskier, sources that went quiet, expired risk acceptances and
   coverage gaps. Instantly or as a daily or weekly digest. A nightly rescan never alerts twice.
 
+## Blueprint
+
+A 3D, blueprint-style map of your infrastructure: every server is a rack, every app (namespace) a
+rack unit, every workload a module with its container images as chips, each with a status light for
+its worst open finding. Zoom in to see more, click anything to see its findings. The renderer is
+Rust compiled to WebAssembly drawing with WebGL2 (`viz/`); the nightly node scan reports the
+topology (`deploy/host/vengeance-topology.py`, contract in [docs/topology.md](docs/topology.md)).
+A list view shows the same data without WebGL.
+
 ## Talk to it from Claude (MCP)
 
 Vengeance is an MCP server at `/mcp` (streamable HTTP). Create a token under **AI assistants**

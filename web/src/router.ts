@@ -12,6 +12,7 @@ const routes: RouteRecordRaw[] = [
     props: (r) => ({ id: Number(r.params.id) }),
     meta: { title: 'Asset' },
   },
+  { path: '/blueprint', name: 'blueprint', component: () => import('./views/BlueprintView.vue'), meta: { title: 'Blueprint' } },
   { path: '/projects', name: 'projects', component: () => import('./views/ProjectsView.vue'), meta: { title: 'Projects' } },
   { path: '/coverage', name: 'coverage', component: () => import('./views/CoverageView.vue'), meta: { title: 'Coverage' } },
   { path: '/sources', name: 'sources', component: () => import('./views/SourcesView.vue'), meta: { title: 'Sources' } },

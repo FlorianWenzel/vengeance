@@ -245,6 +245,16 @@ func newServer(st *store.Store, version string, write bool) *mcp.Server {
 			return text(x)
 		})
 
+	mcp.AddTool(s, &mcp.Tool{Name: "get_infrastructure", Annotations: ro("What runs where"),
+		Description: "The infrastructure as reported by the cluster collectors: hosts (with OS, CPU, memory), the namespaces/apps on each, their workloads and container images, each with its worst open priority and whether scans are stale. Also repositories, domains and registries."},
+		func(ctx context.Context, _ *mcp.CallToolRequest, _ empty) (*mcp.CallToolResult, any, error) {
+			sc, err := st.Scene(ctx)
+			if err != nil {
+				return nil, nil, err
+			}
+			return text(sc)
+		})
+
 	if !write {
 		return s
 	}

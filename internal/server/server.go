@@ -66,6 +66,7 @@ func New(st *store.Store, eng *notify.Engine, cfg Config, log *slog.Logger) http
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Post("/ingest", s.ingest)
+		r.Post("/topology", s.postTopology)
 		r.Group(func(r chi.Router) {
 			r.Use(s.requireUser)
 			r.Get("/me", func(w http.ResponseWriter, r *http.Request) { writeJSON(w, 200, currentUser(r)) })
@@ -101,6 +102,7 @@ func New(st *store.Store, eng *notify.Engine, cfg Config, log *slog.Logger) http
 			r.Patch("/rules/{id}", s.saveRule)
 			r.Delete("/rules/{id}", s.deleteRule)
 			r.Get("/notifications", s.listNotifications)
+			r.Get("/topology", s.getTopology)
 			r.Get("/tokens", s.listTokens)
 			r.Post("/tokens", s.createToken)
 			r.Delete("/tokens/{id}", s.deleteToken)
@@ -116,7 +118,7 @@ func New(st *store.Store, eng *notify.Engine, cfg Config, log *slog.Logger) http
 func securityHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h := w.Header()
-		h.Set("Content-Security-Policy", "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
+		h.Set("Content-Security-Policy", "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
 		h.Set("X-Content-Type-Options", "nosniff")
 		h.Set("Referrer-Policy", "same-origin")
 		h.Set("X-Frame-Options", "DENY")
@@ -217,19 +219,56 @@ func qInt(r *http.Request, k string) int64 {
 
 // ---------- ingest ----------
 
-func (s *Server) ingest(w http.ResponseWriter, r *http.Request) {
+// sourceAuth authenticates a collector by its source token; it writes the error itself.
+func (s *Server) sourceAuth(w http.ResponseWriter, r *http.Request) (int64, string, bool) {
 	tok, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
 	if !ok || tok == "" {
 		writeErr(w, 401, "send the source token as Authorization: Bearer <token>")
-		return
+		return 0, "", false
 	}
 	srcID, srcName, err := s.store.SourceByToken(r.Context(), strings.TrimSpace(tok))
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			writeErr(w, 401, "unknown source token")
-			return
+			return 0, "", false
 		}
 		s.internal(w, err)
+		return 0, "", false
+	}
+	return srcID, srcName, true
+}
+
+func (s *Server) postTopology(w http.ResponseWriter, r *http.Request) {
+	srcID, srcName, ok := s.sourceAuth(w, r)
+	if !ok {
+		return
+	}
+	var in store.TopologyIn
+	dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, 16<<20))
+	if err := dec.Decode(&in); err != nil {
+		writeErr(w, 400, "invalid topology JSON: "+err.Error())
+		return
+	}
+	if err := s.store.SaveTopology(r.Context(), srcID, in); err != nil {
+		s.fail(w, err)
+		return
+	}
+	s.log.Info("topology", "source", srcName, "cluster", in.Cluster, "nodes", len(in.Nodes), "workloads", len(in.Workloads))
+	writeJSON(w, 200, map[string]bool{"ok": true})
+}
+
+func (s *Server) getTopology(w http.ResponseWriter, r *http.Request) {
+	sc, err := s.store.Scene(r.Context())
+	if err != nil {
+		s.fail(w, err)
+		return
+	}
+	writeJSON(w, 200, sc)
+}
+
+func (s *Server) ingest(w http.ResponseWriter, r *http.Request) {
+	srcID, srcName, ok := s.sourceAuth(w, r)
+	if !ok {
 		return
 	}
 	q := r.URL.Query()

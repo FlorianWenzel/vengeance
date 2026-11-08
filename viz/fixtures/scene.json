@@ -1,0 +1,2030 @@
+{
+ "generatedAt": "2026-11-08T09:00:00Z",
+ "hosts": [
+  {
+   "id": "host:12",
+   "assetId": 12,
+   "name": "slowbloom node (Hetzner)",
+   "subtitle": "Ubuntu 24.04.5 LTS · 4 CPU · 7.6 GiB · k3s v1.37.2",
+   "status": {
+    "level": "p2",
+    "open": {
+     "p1": 0,
+     "p2": 1,
+     "p3": 6,
+     "p4": 9,
+     "total": 16
+    },
+    "stale": false
+   },
+   "cluster": "slowbloom",
+   "groups": [
+    {
+     "id": "ns:slowbloom/argocd",
+     "name": "argocd",
+     "status": {
+      "level": "p2",
+      "open": {
+       "p1": 0,
+       "p2": 1,
+       "p3": 12,
+       "p4": 21,
+       "total": 34
+      },
+      "stale": false
+     },
+     "workloads": [
+      {
+       "id": "wl:slowbloom/argocd/Deployment/argocd-server",
+       "name": "argocd-server",
+       "kind": "Deployment",
+       "ready": 1,
+       "desired": 1,
+       "status": {
+        "level": "p3",
+        "open": {
+         "p1": 0,
+         "p2": 0,
+         "p3": 2,
+         "p4": 4,
+         "total": 6
+        },
+        "stale": false
+       },
+       "images": [
+        {
+         "id": "img:101",
+         "assetId": 101,
+         "name": "argocd",
+         "ref": "quay.io/argoproj/argocd:v3.1.5",
+         "status": {
+          "level": "p3",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 2,
+           "p4": 4,
+           "total": 6
+          },
+          "stale": false
+         }
+        }
+       ]
+      },
+      {
+       "id": "wl:slowbloom/argocd/Deployment/argocd-repo-server",
+       "name": "argocd-repo-server",
+       "kind": "Deployment",
+       "ready": 1,
+       "desired": 2,
+       "status": {
+        "level": "p3",
+        "open": {
+         "p1": 0,
+         "p2": 0,
+         "p3": 2,
+         "p4": 4,
+         "total": 6
+        },
+        "stale": false
+       },
+       "images": [
+        {
+         "id": "img:102",
+         "assetId": 102,
+         "name": "argocd",
+         "ref": "quay.io/argoproj/argocd:v3.1.5",
+         "status": {
+          "level": "p3",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 2,
+           "p4": 4,
+           "total": 6
+          },
+          "stale": false
+         }
+        }
+       ]
+      },
+      {
+       "id": "wl:slowbloom/argocd/StatefulSet/argocd-application-controller",
+       "name": "argocd-application-controller",
+       "kind": "StatefulSet",
+       "ready": 1,
+       "desired": 1,
+       "status": {
+        "level": "p3",
+        "open": {
+         "p1": 0,
+         "p2": 0,
+         "p3": 2,
+         "p4": 4,
+         "total": 6
+        },
+        "stale": false
+       },
+       "images": [
+        {
+         "id": "img:103",
+         "assetId": 103,
+         "name": "argocd",
+         "ref": "quay.io/argoproj/argocd:v3.1.5",
+         "status": {
+          "level": "p3",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 2,
+           "p4": 4,
+           "total": 6
+          },
+          "stale": false
+         }
+        }
+       ]
+      },
+      {
+       "id": "wl:slowbloom/argocd/Deployment/argocd-applicationset-controller",
+       "name": "argocd-applicationset-controller",
+       "kind": "Deployment",
+       "ready": 1,
+       "desired": 1,
+       "status": {
+        "level": "p3",
+        "open": {
+         "p1": 0,
+         "p2": 0,
+         "p3": 2,
+         "p4": 4,
+         "total": 6
+        },
+        "stale": false
+       },
+       "images": [
+        {
+         "id": "img:104",
+         "assetId": 104,
+         "name": "argocd",
+         "ref": "quay.io/argoproj/argocd:v3.1.5",
+         "status": {
+          "level": "p3",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 2,
+           "p4": 4,
+           "total": 6
+          },
+          "stale": false
+         }
+        }
+       ]
+      },
+      {
+       "id": "wl:slowbloom/argocd/Deployment/argocd-notifications-controller",
+       "name": "argocd-notifications-controller",
+       "kind": "Deployment",
+       "ready": 1,
+       "desired": 1,
+       "status": {
+        "level": "p3",
+        "open": {
+         "p1": 0,
+         "p2": 0,
+         "p3": 2,
+         "p4": 4,
+         "total": 6
+        },
+        "stale": false
+       },
+       "images": [
+        {
+         "id": "img:105",
+         "assetId": 105,
+         "name": "argocd",
+         "ref": "quay.io/argoproj/argocd:v3.1.5",
+         "status": {
+          "level": "p3",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 2,
+           "p4": 4,
+           "total": 6
+          },
+          "stale": false
+         }
+        }
+       ]
+      },
+      {
+       "id": "wl:slowbloom/argocd/Deployment/argocd-redis",
+       "name": "argocd-redis",
+       "kind": "Deployment",
+       "ready": 1,
+       "desired": 1,
+       "status": {
+        "level": "p2",
+        "open": {
+         "p1": 0,
+         "p2": 1,
+         "p3": 2,
+         "p4": 1,
+         "total": 4
+        },
+        "stale": false
+       },
+       "images": [
+        {
+         "id": "img:106",
+         "assetId": 106,
+         "name": "redis",
+         "ref": "ecr-public.aws.com/docker/library/redis:7.2.8-alpine",
+         "status": {
+          "level": "p2",
+          "open": {
+           "p1": 0,
+           "p2": 1,
+           "p3": 2,
+           "p4": 1,
+           "total": 4
+          },
+          "stale": false
+         }
+        }
+       ]
+      },
+      {
+       "id": "wl:slowbloom/argocd/Deployment/argocd-dex-server",
+       "name": "argocd-dex-server",
+       "kind": "Deployment",
+       "ready": 1,
+       "desired": 1,
+       "status": {
+        "level": "ok",
+        "open": {
+         "p1": 0,
+         "p2": 0,
+         "p3": 0,
+         "p4": 0,
+         "total": 0
+        },
+        "stale": false
+       },
+       "images": [
+        {
+         "id": "img:107",
+         "assetId": 107,
+         "name": "dex",
+         "ref": "ghcr.io/dexidp/dex:v2.43.1",
+         "status": {
+          "level": "ok",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 0,
+           "p4": 0,
+           "total": 0
+          },
+          "stale": false
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "ns:slowbloom/backup",
+     "name": "backup",
+     "status": {
+      "level": "p4",
+      "open": {
+       "p1": 0,
+       "p2": 0,
+       "p3": 0,
+       "p4": 3,
+       "total": 3
+      },
+      "stale": false
+     },
+     "workloads": [
+      {
+       "id": "wl:slowbloom/backup/Deployment/velero",
+       "name": "velero",
+       "kind": "Deployment",
+       "ready": 1,
+       "desired": 1,
+       "status": {
+        "level": "p4",
+        "open": {
+         "p1": 0,
+         "p2": 0,
+         "p3": 0,
+         "p4": 3,
+         "total": 3
+        },
+        "stale": false
+       },
+       "images": [
+        {
+         "id": "img:108",
+         "assetId": 108,
+         "name": "velero",
+         "ref": "velero/velero:v1.16.2",
+         "status": {
+          "level": "p4",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 0,
+           "p4": 3,
+           "total": 3
+          },
+          "stale": false
+         }
+        },
+        {
+         "id": "img:109",
+         "assetId": 109,
+         "name": "velero-plugin-for-aws",
+         "ref": "velero/velero-plugin-for-aws:v1.12.2",
+         "status": {
+          "level": "ok",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 0,
+           "p4": 0,
+           "total": 0
+          },
+          "stale": false
+         }
+        }
+       ]
+      },
+      {
+       "id": "wl:slowbloom/backup/CronJob/pg-dump",
+       "name": "pg-dump",
+       "kind": "CronJob",
+       "ready": 0,
+       "desired": 0,
+       "status": {
+        "level": "ok",
+        "open": {
+         "p1": 0,
+         "p2": 0,
+         "p3": 0,
+         "p4": 0,
+         "total": 0
+        },
+        "stale": false
+       },
+       "images": [
+        {
+         "id": "img:110",
+         "assetId": 110,
+         "name": "postgres",
+         "ref": "postgres:17.6-alpine",
+         "status": {
+          "level": "ok",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 0,
+           "p4": 0,
+           "total": 0
+          },
+          "stale": false
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "ns:slowbloom/cert-manager",
+     "name": "cert-manager",
+     "status": {
+      "level": "ok",
+      "open": {
+       "p1": 0,
+       "p2": 0,
+       "p3": 0,
+       "p4": 0,
+       "total": 0
+      },
+      "stale": false
+     },
+     "workloads": [
+      {
+       "id": "wl:slowbloom/cert-manager/Deployment/cert-manager",
+       "name": "cert-manager",
+       "kind": "Deployment",
+       "ready": 1,
+       "desired": 1,
+       "status": {
+        "level": "ok",
+        "open": {
+         "p1": 0,
+         "p2": 0,
+         "p3": 0,
+         "p4": 0,
+         "total": 0
+        },
+        "stale": false
+       },
+       "images": [
+        {
+         "id": "img:111",
+         "assetId": 111,
+         "name": "cert-manager-controller",
+         "ref": "quay.io/jetstack/cert-manager-controller:v1.18.2",
+         "status": {
+          "level": "ok",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 0,
+           "p4": 0,
+           "total": 0
+          },
+          "stale": false
+         }
+        }
+       ]
+      },
+      {
+       "id": "wl:slowbloom/cert-manager/Deployment/cert-manager-cainjector",
+       "name": "cert-manager-cainjector",
+       "kind": "Deployment",
+       "ready": 1,
+       "desired": 1,
+       "status": {
+        "level": "ok",
+        "open": {
+         "p1": 0,
+         "p2": 0,
+         "p3": 0,
+         "p4": 0,
+         "total": 0
+        },
+        "stale": false
+       },
+       "images": [
+        {
+         "id": "img:112",
+         "assetId": 112,
+         "name": "cert-manager-cainjector",
+         "ref": "quay.io/jetstack/cert-manager-cainjector:v1.18.2",
+         "status": {
+          "level": "ok",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 0,
+           "p4": 0,
+           "total": 0
+          },
+          "stale": false
+         }
+        }
+       ]
+      },
+      {
+       "id": "wl:slowbloom/cert-manager/Deployment/cert-manager-webhook",
+       "name": "cert-manager-webhook",
+       "kind": "Deployment",
+       "ready": 1,
+       "desired": 1,
+       "status": {
+        "level": "ok",
+        "open": {
+         "p1": 0,
+         "p2": 0,
+         "p3": 0,
+         "p4": 0,
+         "total": 0
+        },
+        "stale": false
+       },
+       "images": [
+        {
+         "id": "img:113",
+         "assetId": 113,
+         "name": "cert-manager-webhook",
+         "ref": "quay.io/jetstack/cert-manager-webhook:v1.18.2",
+         "status": {
+          "level": "ok",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 0,
+           "p4": 0,
+           "total": 0
+          },
+          "stale": false
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "ns:slowbloom/default",
+     "name": "default",
+     "status": {
+      "level": "ok",
+      "open": {
+       "p1": 0,
+       "p2": 0,
+       "p3": 0,
+       "p4": 0,
+       "total": 0
+      },
+      "stale": false
+     },
+     "workloads": []
+    },
+    {
+     "id": "ns:slowbloom/ghost",
+     "name": "ghost",
+     "status": {
+      "level": "p2",
+      "open": {
+       "p1": 0,
+       "p2": 2,
+       "p3": 9,
+       "p4": 12,
+       "total": 23
+      },
+      "stale": false
+     },
+     "workloads": [
+      {
+       "id": "wl:slowbloom/ghost/Deployment/ghost",
+       "name": "ghost",
+       "kind": "Deployment",
+       "ready": 1,
+       "desired": 1,
+       "status": {
+        "level": "p2",
+        "open": {
+         "p1": 0,
+         "p2": 2,
+         "p3": 5,
+         "p4": 4,
+         "total": 11
+        },
+        "stale": false
+       },
+       "images": [
+        {
+         "id": "img:114",
+         "assetId": 114,
+         "name": "ghost",
+         "ref": "ghost:6.0.9-alpine",
+         "status": {
+          "level": "p2",
+          "open": {
+           "p1": 0,
+           "p2": 2,
+           "p3": 4,
+           "p4": 1,
+           "total": 7
+          },
+          "stale": false
+         }
+        },
+        {
+         "id": "img:115",
+         "assetId": 115,
+         "name": "proxyv2",
+         "ref": "docker.io/istio/proxyv2:1.27.1",
+         "status": {
+          "level": "p3",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 1,
+           "p4": 3,
+           "total": 4
+          },
+          "stale": false
+         }
+        }
+       ]
+      },
+      {
+       "id": "wl:slowbloom/ghost/StatefulSet/mysql",
+       "name": "mysql",
+       "kind": "StatefulSet",
+       "ready": 1,
+       "desired": 1,
+       "status": {
+        "level": "p3",
+        "open": {
+         "p1": 0,
+         "p2": 0,
+         "p3": 4,
+         "p4": 8,
+         "total": 12
+        },
+        "stale": false
+       },
+       "images": [
+        {
+         "id": "img:116",
+         "assetId": 116,
+         "name": "mysql",
+         "ref": "mysql:8.4.6",
+         "status": {
+          "level": "p3",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 3,
+           "p4": 5,
+           "total": 8
+          },
+          "stale": false
+         }
+        },
+        {
+         "id": "img:117",
+         "assetId": 117,
+         "name": "proxyv2",
+         "ref": "docker.io/istio/proxyv2:1.27.1",
+         "status": {
+          "level": "p3",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 1,
+           "p4": 3,
+           "total": 4
+          },
+          "stale": false
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "ns:slowbloom/istio-system",
+     "name": "istio-system",
+     "status": {
+      "level": "p3",
+      "open": {
+       "p1": 0,
+       "p2": 0,
+       "p3": 1,
+       "p4": 5,
+       "total": 6
+      },
+      "stale": false
+     },
+     "workloads": [
+      {
+       "id": "wl:slowbloom/istio-system/Deployment/istiod",
+       "name": "istiod",
+       "kind": "Deployment",
+       "ready": 1,
+       "desired": 1,
+       "status": {
+        "level": "p4",
+        "open": {
+         "p1": 0,
+         "p2": 0,
+         "p3": 0,
+         "p4": 2,
+         "total": 2
+        },
+        "stale": false
+       },
+       "images": [
+        {
+         "id": "img:118",
+         "assetId": 118,
+         "name": "pilot",
+         "ref": "docker.io/istio/pilot:1.27.1",
+         "status": {
+          "level": "p4",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 0,
+           "p4": 2,
+           "total": 2
+          },
+          "stale": false
+         }
+        }
+       ]
+      },
+      {
+       "id": "wl:slowbloom/istio-system/Deployment/istio-ingressgateway",
+       "name": "istio-ingressgateway",
+       "kind": "Deployment",
+       "ready": 2,
+       "desired": 2,
+       "status": {
+        "level": "p3",
+        "open": {
+         "p1": 0,
+         "p2": 0,
+         "p3": 1,
+         "p4": 3,
+         "total": 4
+        },
+        "stale": false
+       },
+       "images": [
+        {
+         "id": "img:119",
+         "assetId": 119,
+         "name": "proxyv2",
+         "ref": "docker.io/istio/proxyv2:1.27.1",
+         "status": {
+          "level": "p3",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 1,
+           "p4": 3,
+           "total": 4
+          },
+          "stale": false
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "ns:slowbloom/kube-system",
+     "name": "kube-system",
+     "status": {
+      "level": "p3",
+      "open": {
+       "p1": 0,
+       "p2": 0,
+       "p3": 1,
+       "p4": 1,
+       "total": 2
+      },
+      "stale": false
+     },
+     "workloads": [
+      {
+       "id": "wl:slowbloom/kube-system/Deployment/coredns",
+       "name": "coredns",
+       "kind": "Deployment",
+       "ready": 1,
+       "desired": 1,
+       "status": {
+        "level": "ok",
+        "open": {
+         "p1": 0,
+         "p2": 0,
+         "p3": 0,
+         "p4": 0,
+         "total": 0
+        },
+        "stale": false
+       },
+       "images": [
+        {
+         "id": "img:120",
+         "assetId": 120,
+         "name": "mirrored-coredns-coredns",
+         "ref": "rancher/mirrored-coredns-coredns:1.12.3",
+         "status": {
+          "level": "ok",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 0,
+           "p4": 0,
+           "total": 0
+          },
+          "stale": false
+         }
+        }
+       ]
+      },
+      {
+       "id": "wl:slowbloom/kube-system/Deployment/local-path-provisioner",
+       "name": "local-path-provisioner",
+       "kind": "Deployment",
+       "ready": 1,
+       "desired": 1,
+       "status": {
+        "level": "p4",
+        "open": {
+         "p1": 0,
+         "p2": 0,
+         "p3": 0,
+         "p4": 1,
+         "total": 1
+        },
+        "stale": false
+       },
+       "images": [
+        {
+         "id": "img:121",
+         "assetId": 121,
+         "name": "local-path-provisioner",
+         "ref": "rancher/local-path-provisioner:v0.0.32",
+         "status": {
+          "level": "p4",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 0,
+           "p4": 1,
+           "total": 1
+          },
+          "stale": false
+         }
+        }
+       ]
+      },
+      {
+       "id": "wl:slowbloom/kube-system/Deployment/metrics-server",
+       "name": "metrics-server",
+       "kind": "Deployment",
+       "ready": 1,
+       "desired": 1,
+       "status": {
+        "level": "ok",
+        "open": {
+         "p1": 0,
+         "p2": 0,
+         "p3": 0,
+         "p4": 0,
+         "total": 0
+        },
+        "stale": false
+       },
+       "images": [
+        {
+         "id": "img:122",
+         "assetId": 122,
+         "name": "mirrored-metrics-server",
+         "ref": "rancher/mirrored-metrics-server:v0.8.0",
+         "status": {
+          "level": "ok",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 0,
+           "p4": 0,
+           "total": 0
+          },
+          "stale": false
+         }
+        }
+       ]
+      },
+      {
+       "id": "wl:slowbloom/kube-system/Deployment/traefik",
+       "name": "traefik",
+       "kind": "Deployment",
+       "ready": 1,
+       "desired": 1,
+       "status": {
+        "level": "p3",
+        "open": {
+         "p1": 0,
+         "p2": 0,
+         "p3": 1,
+         "p4": 0,
+         "total": 1
+        },
+        "stale": false
+       },
+       "images": [
+        {
+         "id": "img:123",
+         "assetId": 123,
+         "name": "mirrored-library-traefik",
+         "ref": "rancher/mirrored-library-traefik:3.5.1",
+         "status": {
+          "level": "p3",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 1,
+           "p4": 0,
+           "total": 1
+          },
+          "stale": false
+         }
+        }
+       ]
+      },
+      {
+       "id": "wl:slowbloom/kube-system/DaemonSet/svclb-traefik",
+       "name": "svclb-traefik",
+       "kind": "DaemonSet",
+       "ready": 1,
+       "desired": 1,
+       "status": {
+        "level": "ok",
+        "open": {
+         "p1": 0,
+         "p2": 0,
+         "p3": 0,
+         "p4": 0,
+         "total": 0
+        },
+        "stale": false
+       },
+       "images": [
+        {
+         "id": "img:124",
+         "assetId": 124,
+         "name": "klipper-lb",
+         "ref": "rancher/klipper-lb:v0.4.13",
+         "status": {
+          "level": "ok",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 0,
+           "p4": 0,
+           "total": 0
+          },
+          "stale": false
+         }
+        },
+        {
+         "id": "img:125",
+         "assetId": 125,
+         "name": "klipper-lb",
+         "ref": "rancher/klipper-lb:v0.4.13",
+         "status": {
+          "level": "ok",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 0,
+           "p4": 0,
+           "total": 0
+          },
+          "stale": false
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "ns:slowbloom/mailpit",
+     "name": "mailpit",
+     "status": {
+      "level": "ok",
+      "open": {
+       "p1": 0,
+       "p2": 0,
+       "p3": 0,
+       "p4": 0,
+       "total": 0
+      },
+      "stale": false
+     },
+     "workloads": [
+      {
+       "id": "wl:slowbloom/mailpit/Deployment/mailpit",
+       "name": "mailpit",
+       "kind": "Deployment",
+       "ready": 1,
+       "desired": 1,
+       "status": {
+        "level": "ok",
+        "open": {
+         "p1": 0,
+         "p2": 0,
+         "p3": 0,
+         "p4": 0,
+         "total": 0
+        },
+        "stale": false
+       },
+       "images": [
+        {
+         "id": "img:126",
+         "assetId": 126,
+         "name": "mailpit",
+         "ref": "axllent/mailpit:v1.27.7",
+         "status": {
+          "level": "ok",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 0,
+           "p4": 0,
+           "total": 0
+          },
+          "stale": false
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "ns:slowbloom/minio",
+     "name": "minio",
+     "status": {
+      "level": "p2",
+      "open": {
+       "p1": 0,
+       "p2": 1,
+       "p3": 0,
+       "p4": 0,
+       "total": 1
+      },
+      "stale": false
+     },
+     "workloads": [
+      {
+       "id": "wl:slowbloom/minio/StatefulSet/minio",
+       "name": "minio",
+       "kind": "StatefulSet",
+       "ready": 1,
+       "desired": 1,
+       "status": {
+        "level": "p2",
+        "open": {
+         "p1": 0,
+         "p2": 1,
+         "p3": 0,
+         "p4": 0,
+         "total": 1
+        },
+        "stale": false
+       },
+       "images": [
+        {
+         "id": "img:127",
+         "assetId": 127,
+         "name": "minio",
+         "ref": "quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z",
+         "status": {
+          "level": "p2",
+          "open": {
+           "p1": 0,
+           "p2": 1,
+           "p3": 0,
+           "p4": 0,
+           "total": 1
+          },
+          "stale": false
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "ns:slowbloom/monitoring",
+     "name": "monitoring",
+     "status": {
+      "level": "p3",
+      "open": {
+       "p1": 0,
+       "p2": 0,
+       "p3": 2,
+       "p4": 2,
+       "total": 4
+      },
+      "stale": false
+     },
+     "workloads": [
+      {
+       "id": "wl:slowbloom/monitoring/StatefulSet/prometheus",
+       "name": "prometheus",
+       "kind": "StatefulSet",
+       "ready": 1,
+       "desired": 1,
+       "status": {
+        "level": "ok",
+        "open": {
+         "p1": 0,
+         "p2": 0,
+         "p3": 0,
+         "p4": 0,
+         "total": 0
+        },
+        "stale": false
+       },
+       "images": [
+        {
+         "id": "img:128",
+         "assetId": 128,
+         "name": "prometheus",
+         "ref": "quay.io/prometheus/prometheus:v3.6.0",
+         "status": {
+          "level": "ok",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 0,
+           "p4": 0,
+           "total": 0
+          },
+          "stale": false
+         }
+        },
+        {
+         "id": "img:129",
+         "assetId": 129,
+         "name": "prometheus-config-reloader",
+         "ref": "quay.io/prometheus-operator/prometheus-config-reloader:v0.85.0",
+         "status": {
+          "level": "ok",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 0,
+           "p4": 0,
+           "total": 0
+          },
+          "stale": false
+         }
+        }
+       ]
+      },
+      {
+       "id": "wl:slowbloom/monitoring/Deployment/grafana",
+       "name": "grafana",
+       "kind": "Deployment",
+       "ready": 1,
+       "desired": 1,
+       "status": {
+        "level": "p3",
+        "open": {
+         "p1": 0,
+         "p2": 0,
+         "p3": 2,
+         "p4": 2,
+         "total": 4
+        },
+        "stale": false
+       },
+       "images": [
+        {
+         "id": "img:130",
+         "assetId": 130,
+         "name": "grafana",
+         "ref": "grafana/grafana:12.2.0",
+         "status": {
+          "level": "p3",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 2,
+           "p4": 2,
+           "total": 4
+          },
+          "stale": false
+         }
+        },
+        {
+         "id": "img:131",
+         "assetId": 131,
+         "name": "k8s-sidecar",
+         "ref": "quay.io/kiwigrid/k8s-sidecar:1.30.10",
+         "status": {
+          "level": "ok",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 0,
+           "p4": 0,
+           "total": 0
+          },
+          "stale": false
+         }
+        }
+       ]
+      },
+      {
+       "id": "wl:slowbloom/monitoring/StatefulSet/alertmanager",
+       "name": "alertmanager",
+       "kind": "StatefulSet",
+       "ready": 0,
+       "desired": 1,
+       "status": {
+        "level": "ok",
+        "open": {
+         "p1": 0,
+         "p2": 0,
+         "p3": 0,
+         "p4": 0,
+         "total": 0
+        },
+        "stale": false
+       },
+       "images": [
+        {
+         "id": "img:132",
+         "assetId": 132,
+         "name": "alertmanager",
+         "ref": "quay.io/prometheus/alertmanager:v0.28.1",
+         "status": {
+          "level": "ok",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 0,
+           "p4": 0,
+           "total": 0
+          },
+          "stale": false
+         }
+        }
+       ]
+      },
+      {
+       "id": "wl:slowbloom/monitoring/DaemonSet/node-exporter",
+       "name": "node-exporter",
+       "kind": "DaemonSet",
+       "ready": 1,
+       "desired": 1,
+       "status": {
+        "level": "ok",
+        "open": {
+         "p1": 0,
+         "p2": 0,
+         "p3": 0,
+         "p4": 0,
+         "total": 0
+        },
+        "stale": false
+       },
+       "images": [
+        {
+         "id": "img:133",
+         "assetId": 133,
+         "name": "node-exporter",
+         "ref": "quay.io/prometheus/node-exporter:v1.9.1",
+         "status": {
+          "level": "ok",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 0,
+           "p4": 0,
+           "total": 0
+          },
+          "stale": false
+         }
+        }
+       ]
+      },
+      {
+       "id": "wl:slowbloom/monitoring/Deployment/kube-state-metrics",
+       "name": "kube-state-metrics",
+       "kind": "Deployment",
+       "ready": 1,
+       "desired": 1,
+       "status": {
+        "level": "ok",
+        "open": {
+         "p1": 0,
+         "p2": 0,
+         "p3": 0,
+         "p4": 0,
+         "total": 0
+        },
+        "stale": false
+       },
+       "images": [
+        {
+         "id": "img:134",
+         "assetId": 134,
+         "name": "kube-state-metrics",
+         "ref": "registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.16.0",
+         "status": {
+          "level": "ok",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 0,
+           "p4": 0,
+           "total": 0
+          },
+          "stale": false
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "ns:slowbloom/renovate",
+     "name": "renovate",
+     "status": {
+      "level": "unknown",
+      "open": {
+       "p1": 0,
+       "p2": 0,
+       "p3": 0,
+       "p4": 0,
+       "total": 0
+      },
+      "stale": true
+     },
+     "workloads": [
+      {
+       "id": "wl:slowbloom/renovate/CronJob/renovate",
+       "name": "renovate",
+       "kind": "CronJob",
+       "ready": 0,
+       "desired": 0,
+       "status": {
+        "level": "unknown",
+        "open": {
+         "p1": 0,
+         "p2": 0,
+         "p3": 0,
+         "p4": 0,
+         "total": 0
+        },
+        "stale": true
+       },
+       "images": [
+        {
+         "id": "img:135",
+         "assetId": 135,
+         "name": "renovate",
+         "ref": "ghcr.io/renovatebot/renovate:41.97.7",
+         "status": {
+          "level": "unknown",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 0,
+           "p4": 0,
+           "total": 0
+          },
+          "stale": true
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "ns:slowbloom/slowbloom",
+     "name": "slowbloom",
+     "status": {
+      "level": "p1",
+      "open": {
+       "p1": 1,
+       "p2": 3,
+       "p3": 10,
+       "p4": 17,
+       "total": 31
+      },
+      "stale": false
+     },
+     "workloads": [
+      {
+       "id": "wl:slowbloom/slowbloom/Deployment/api",
+       "name": "api",
+       "kind": "Deployment",
+       "ready": 2,
+       "desired": 2,
+       "status": {
+        "level": "p1",
+        "open": {
+         "p1": 1,
+         "p2": 2,
+         "p3": 4,
+         "p4": 7,
+         "total": 14
+        },
+        "stale": false
+       },
+       "images": [
+        {
+         "id": "img:136",
+         "assetId": 136,
+         "name": "petal-api",
+         "ref": "registry.flos.life/petal-api:f489ff4",
+         "status": {
+          "level": "p1",
+          "open": {
+           "p1": 1,
+           "p2": 2,
+           "p3": 3,
+           "p4": 4,
+           "total": 10
+          },
+          "stale": false
+         }
+        },
+        {
+         "id": "img:137",
+         "assetId": 137,
+         "name": "proxyv2",
+         "ref": "docker.io/istio/proxyv2:1.27.1",
+         "status": {
+          "level": "p3",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 1,
+           "p4": 3,
+           "total": 4
+          },
+          "stale": false
+         }
+        }
+       ]
+      },
+      {
+       "id": "wl:slowbloom/slowbloom/Deployment/web",
+       "name": "web",
+       "kind": "Deployment",
+       "ready": 2,
+       "desired": 2,
+       "status": {
+        "level": "p3",
+        "open": {
+         "p1": 0,
+         "p2": 0,
+         "p3": 2,
+         "p4": 5,
+         "total": 7
+        },
+        "stale": false
+       },
+       "images": [
+        {
+         "id": "img:138",
+         "assetId": 138,
+         "name": "petal-web",
+         "ref": "registry.flos.life/petal-web:f489ff4",
+         "status": {
+          "level": "p3",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 1,
+           "p4": 2,
+           "total": 3
+          },
+          "stale": false
+         }
+        },
+        {
+         "id": "img:139",
+         "assetId": 139,
+         "name": "proxyv2",
+         "ref": "docker.io/istio/proxyv2:1.27.1",
+         "status": {
+          "level": "p3",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 1,
+           "p4": 3,
+           "total": 4
+          },
+          "stale": false
+         }
+        }
+       ]
+      },
+      {
+       "id": "wl:slowbloom/slowbloom/Deployment/marketing",
+       "name": "marketing",
+       "kind": "Deployment",
+       "ready": 1,
+       "desired": 1,
+       "status": {
+        "level": "p3",
+        "open": {
+         "p1": 0,
+         "p2": 0,
+         "p3": 1,
+         "p4": 3,
+         "total": 4
+        },
+        "stale": false
+       },
+       "images": [
+        {
+         "id": "img:140",
+         "assetId": 140,
+         "name": "petal-marketing",
+         "ref": "registry.flos.life/petal-marketing:f489ff4",
+         "status": {
+          "level": "ok",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 0,
+           "p4": 0,
+           "total": 0
+          },
+          "stale": false
+         }
+        },
+        {
+         "id": "img:141",
+         "assetId": 141,
+         "name": "proxyv2",
+         "ref": "docker.io/istio/proxyv2:1.27.1",
+         "status": {
+          "level": "p3",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 1,
+           "p4": 3,
+           "total": 4
+          },
+          "stale": false
+         }
+        }
+       ]
+      },
+      {
+       "id": "wl:slowbloom/slowbloom/StatefulSet/postgres",
+       "name": "postgres",
+       "kind": "StatefulSet",
+       "ready": 1,
+       "desired": 1,
+       "status": {
+        "level": "p2",
+        "open": {
+         "p1": 0,
+         "p2": 1,
+         "p3": 1,
+         "p4": 2,
+         "total": 4
+        },
+        "stale": false
+       },
+       "images": [
+        {
+         "id": "img:142",
+         "assetId": 142,
+         "name": "postgres",
+         "ref": "postgres:17.6-alpine",
+         "status": {
+          "level": "p4",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 0,
+           "p4": 2,
+           "total": 2
+          },
+          "stale": false
+         }
+        },
+        {
+         "id": "img:143",
+         "assetId": 143,
+         "name": "postgres-backup-local",
+         "ref": "prodrigestivill/postgres-backup-local:17",
+         "status": {
+          "level": "p2",
+          "open": {
+           "p1": 0,
+           "p2": 1,
+           "p3": 1,
+           "p4": 0,
+           "total": 2
+          },
+          "stale": false
+         }
+        }
+       ]
+      },
+      {
+       "id": "wl:slowbloom/slowbloom/Deployment/registry",
+       "name": "registry",
+       "kind": "Deployment",
+       "ready": 1,
+       "desired": 1,
+       "status": {
+        "level": "p3",
+        "open": {
+         "p1": 0,
+         "p2": 0,
+         "p3": 2,
+         "p4": 0,
+         "total": 2
+        },
+        "stale": false
+       },
+       "images": [
+        {
+         "id": "img:144",
+         "assetId": 144,
+         "name": "registry",
+         "ref": "registry:3.0.0",
+         "status": {
+          "level": "p3",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 2,
+           "p4": 0,
+           "total": 2
+          },
+          "stale": false
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "ns:slowbloom/umami",
+     "name": "umami",
+     "status": {
+      "level": "p3",
+      "open": {
+       "p1": 0,
+       "p2": 0,
+       "p3": 2,
+       "p4": 5,
+       "total": 7
+      },
+      "stale": true
+     },
+     "workloads": [
+      {
+       "id": "wl:slowbloom/umami/Deployment/umami",
+       "name": "umami",
+       "kind": "Deployment",
+       "ready": 1,
+       "desired": 1,
+       "status": {
+        "level": "p3",
+        "open": {
+         "p1": 0,
+         "p2": 0,
+         "p3": 2,
+         "p4": 1,
+         "total": 3
+        },
+        "stale": true
+       },
+       "images": [
+        {
+         "id": "img:145",
+         "assetId": 145,
+         "name": "umami",
+         "ref": "ghcr.io/umami-software/umami:postgresql-v2.19.0",
+         "status": {
+          "level": "p3",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 2,
+           "p4": 1,
+           "total": 3
+          },
+          "stale": true
+         }
+        }
+       ]
+      },
+      {
+       "id": "wl:slowbloom/umami/StatefulSet/postgres",
+       "name": "postgres",
+       "kind": "StatefulSet",
+       "ready": 1,
+       "desired": 1,
+       "status": {
+        "level": "p4",
+        "open": {
+         "p1": 0,
+         "p2": 0,
+         "p3": 0,
+         "p4": 4,
+         "total": 4
+        },
+        "stale": true
+       },
+       "images": [
+        {
+         "id": "img:146",
+         "assetId": 146,
+         "name": "postgres",
+         "ref": "postgres:15.14-alpine",
+         "status": {
+          "level": "p4",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 0,
+           "p4": 4,
+           "total": 4
+          },
+          "stale": true
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "ns:slowbloom/uptime",
+     "name": "uptime",
+     "status": {
+      "level": "p2",
+      "open": {
+       "p1": 0,
+       "p2": 3,
+       "p3": 1,
+       "p4": 0,
+       "total": 4
+      },
+      "stale": false
+     },
+     "workloads": [
+      {
+       "id": "wl:slowbloom/uptime/Deployment/uptime-kuma",
+       "name": "uptime-kuma",
+       "kind": "Deployment",
+       "ready": 1,
+       "desired": 1,
+       "status": {
+        "level": "p2",
+        "open": {
+         "p1": 0,
+         "p2": 3,
+         "p3": 1,
+         "p4": 0,
+         "total": 4
+        },
+        "stale": false
+       },
+       "images": [
+        {
+         "id": "img:147",
+         "assetId": 147,
+         "name": "uptime-kuma",
+         "ref": "louislam/uptime-kuma:2.0.0-beta.3",
+         "status": {
+          "level": "p2",
+          "open": {
+           "p1": 0,
+           "p2": 3,
+           "p3": 1,
+           "p4": 0,
+           "total": 4
+          },
+          "stale": false
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "ns:slowbloom/vengeance",
+     "name": "vengeance",
+     "status": {
+      "level": "ok",
+      "open": {
+       "p1": 0,
+       "p2": 0,
+       "p3": 0,
+       "p4": 0,
+       "total": 0
+      },
+      "stale": false
+     },
+     "workloads": [
+      {
+       "id": "wl:slowbloom/vengeance/Deployment/vengeance",
+       "name": "vengeance",
+       "kind": "Deployment",
+       "ready": 1,
+       "desired": 1,
+       "status": {
+        "level": "ok",
+        "open": {
+         "p1": 0,
+         "p2": 0,
+         "p3": 0,
+         "p4": 0,
+         "total": 0
+        },
+        "stale": false
+       },
+       "images": [
+        {
+         "id": "img:148",
+         "assetId": 148,
+         "name": "vengeance",
+         "ref": "ghcr.io/flos-life/vengeance:v0.4.0",
+         "status": {
+          "level": "ok",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 0,
+           "p4": 0,
+           "total": 0
+          },
+          "stale": false
+         }
+        }
+       ]
+      },
+      {
+       "id": "wl:slowbloom/vengeance/CronJob/nightly-scan",
+       "name": "nightly-scan",
+       "kind": "CronJob",
+       "ready": 0,
+       "desired": 0,
+       "status": {
+        "level": "ok",
+        "open": {
+         "p1": 0,
+         "p2": 0,
+         "p3": 0,
+         "p4": 0,
+         "total": 0
+        },
+        "stale": false
+       },
+       "images": [
+        {
+         "id": "img:149",
+         "assetId": 149,
+         "name": "vengeance-scanner",
+         "ref": "ghcr.io/flos-life/vengeance-scanner:v0.4.0",
+         "status": {
+          "level": "ok",
+          "open": {
+           "p1": 0,
+           "p2": 0,
+           "p3": 0,
+           "p4": 0,
+           "total": 0
+          },
+          "stale": false
+         }
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "external": [
+  {
+   "id": "asset:3",
+   "assetId": 3,
+   "kind": "repository",
+   "name": "flos-life/petal",
+   "status": {
+    "level": "p2",
+    "open": {
+     "p1": 0,
+     "p2": 2,
+     "p3": 1,
+     "p4": 0,
+     "total": 3
+    },
+    "stale": false
+   }
+  },
+  {
+   "id": "asset:4",
+   "assetId": 4,
+   "kind": "repository",
+   "name": "flos-life/vengeance",
+   "status": {
+    "level": "ok",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 0,
+     "p4": 0,
+     "total": 0
+    },
+    "stale": false
+   }
+  },
+  {
+   "id": "asset:5",
+   "assetId": 5,
+   "kind": "repository",
+   "name": "flos-life/infra",
+   "status": {
+    "level": "p3",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 1,
+     "p4": 0,
+     "total": 1
+    },
+    "stale": false
+   }
+  },
+  {
+   "id": "asset:6",
+   "assetId": 6,
+   "kind": "repository",
+   "name": "flos-life/blog-theme",
+   "status": {
+    "level": "unknown",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 0,
+     "p4": 0,
+     "total": 0
+    },
+    "stale": true
+   }
+  },
+  {
+   "id": "asset:7",
+   "assetId": 7,
+   "kind": "domain",
+   "name": "slowbloom.app",
+   "status": {
+    "level": "ok",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 0,
+     "p4": 0,
+     "total": 0
+    },
+    "stale": false
+   }
+  },
+  {
+   "id": "asset:8",
+   "assetId": 8,
+   "kind": "domain",
+   "name": "flos.life",
+   "status": {
+    "level": "p3",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 1,
+     "p4": 0,
+     "total": 1
+    },
+    "stale": false
+   }
+  },
+  {
+   "id": "asset:9",
+   "assetId": 9,
+   "kind": "domain",
+   "name": "registry.flos.life",
+   "status": {
+    "level": "p1",
+    "open": {
+     "p1": 1,
+     "p2": 0,
+     "p3": 0,
+     "p4": 0,
+     "total": 1
+    },
+    "stale": false
+   }
+  },
+  {
+   "id": "asset:10",
+   "assetId": 10,
+   "kind": "registry",
+   "name": "registry.flos.life",
+   "status": {
+    "level": "p4",
+    "open": {
+     "p1": 0,
+     "p2": 0,
+     "p3": 0,
+     "p4": 1,
+     "total": 1
+    },
+    "stale": false
+   }
+  }
+ ]
+}

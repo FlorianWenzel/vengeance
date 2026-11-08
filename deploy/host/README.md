@@ -8,6 +8,7 @@ pushes each result to Vengeance as its own asset. A systemd timer runs it at 03:
 # trivy and the vengeance CLI on the node
 install -m 0755 vengeance /usr/local/bin/vengeance          # from a GitHub release
 install -m 0755 vengeance-scan.sh /usr/local/bin/vengeance-scan
+install -m 0755 vengeance-topology.py /usr/local/bin/vengeance-topology   # feeds the 3D blueprint
 install -d -m 0700 /etc/vengeance
 cat > /etc/vengeance/scan.env <<ENV
 VENGEANCE_URL=https://vengeance.example.com

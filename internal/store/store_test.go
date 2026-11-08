@@ -318,3 +318,70 @@ func TestNotificationsQueue(t *testing.T) {
 		t.Error("bad trigger accepted")
 	}
 }
+
+func TestTopologyScene(t *testing.T) {
+	s := newStore(t)
+	ctx := context.Background()
+	ci := source(t, s, "node")
+	tags := []string{"prod"}
+	if _, err := s.CreateAsset(ctx, store.AssetInput{Kind: "host", Identifier: "node1", Tags: &tags}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.CreateAsset(ctx, store.AssetInput{Kind: "host", Identifier: "spare"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.CreateAsset(ctx, store.AssetInput{Kind: "repository", Identifier: "github.com/me/app"}); err != nil {
+		t.Fatal(err)
+	}
+	// postgres image with a P2, scanned under its normalised name
+	if _, err := s.Ingest(ctx, ci, "node", store.IngestOptions{Asset: "image:postgres"}, report(vuln("CVE-9", "openssl", "1", "2", "high")), nil); err != nil {
+		t.Fatal(err)
+	}
+	err := s.SaveTopology(ctx, ci, store.TopologyIn{Cluster: "prod",
+		Nodes: []store.TopoNode{{Name: "n1", Host: "host:node1", CPU: "4", Memory: "8388608Ki", OS: "Ubuntu 24.04", Kubelet: "v1.37.2+k3s1"}},
+		Workloads: []store.TopoWorkld{
+			{Namespace: "db", Name: "postgres", Kind: "StatefulSet", Node: "n1", Ready: 1, Desired: 1,
+				Containers: []store.TopoContainer{{Name: "pg", Image: "docker.io/library/postgres:17.11-alpine"}}},
+			{Namespace: "web", Name: "site", Kind: "Deployment", Node: "n1", Ready: 0, Desired: 1,
+				Containers: []store.TopoContainer{{Name: "app", Image: "ghcr.io/me/site:1"}, {Name: "app2", Image: "ghcr.io/me/site:1"}}},
+			{Namespace: "x", Name: "orphan", Kind: "Pod", Node: "elsewhere"},
+		}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.SaveTopology(ctx, ci, store.TopologyIn{}); err == nil {
+		t.Error("empty cluster accepted")
+	}
+	sc, err := s.Scene(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(sc.Hosts) != 2 {
+		t.Fatalf("hosts %+v", sc.Hosts)
+	}
+	h := sc.Hosts[0]
+	if h.Name != "node1" || h.Subtitle != "Ubuntu 24.04 · 4 CPU · 8.0 GiB · k3s v1.37.2" || len(h.Groups) != 2 {
+		t.Fatalf("host %+v", h)
+	}
+	db, web := h.Groups[0], h.Groups[1]
+	if db.Name != "db" || db.Status.Level != "p2" || db.Workloads[0].Images[0].AssetID == nil || db.Workloads[0].Images[0].Name != "postgres" {
+		t.Errorf("db group %+v", db)
+	}
+	if web.Status.Level != "unknown" || len(web.Workloads[0].Images) != 1 || web.Workloads[0].Images[0].AssetID != nil || web.Workloads[0].Ready != 0 {
+		t.Errorf("web group %+v", web)
+	}
+	if sc.Hosts[1].Name != "spare" || sc.Hosts[1].Subtitle != "no topology reported" {
+		t.Errorf("spare host %+v", sc.Hosts[1])
+	}
+	if len(sc.External) != 1 || sc.External[0].Kind != "repository" {
+		t.Errorf("external %+v", sc.External)
+	}
+	// a new snapshot replaces the old one
+	if err := s.SaveTopology(ctx, ci, store.TopologyIn{Cluster: "prod", Nodes: []store.TopoNode{{Name: "n1", Host: "host:node1"}}}); err != nil {
+		t.Fatal(err)
+	}
+	sc, _ = s.Scene(ctx)
+	if len(sc.Hosts[0].Groups) != 0 {
+		t.Errorf("snapshot not replaced: %+v", sc.Hosts[0].Groups)
+	}
+}

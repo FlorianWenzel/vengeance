@@ -5,6 +5,7 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 const NAMES = [
+  'boxes',
   'bot',
   'layout-dashboard', 'inbox', 'wrench', 'server', 'radar', 'radio-tower', 'bell', 'folder',
   'log-out', 'user', 'copy', 'check', 'x', 'chevron-left', 'chevron-right', 'chevron-down',
