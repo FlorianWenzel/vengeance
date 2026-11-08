@@ -130,9 +130,6 @@ jobs:
           provenance: mode=max
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      - uses: sigstore/cosign-installer@v4.1.3
-      - name: Sign the image (keyless)
-        run: cosign sign --yes "${IMAGE}@${{ steps.build.outputs.digest }}"
       - name: Scan the image and report to Vengeance
         env:
           VENGEANCE_URL: ${{ vars.VENGEANCE_URL }}
@@ -148,3 +145,6 @@ jobs:
             push --asset "image:${IMAGE}" --project vengeance --scanners vuln,secret --digest "$DIGEST" /w/image.json
           docker run --rm --entrypoint vengeance -e VENGEANCE_URL -e VENGEANCE_TOKEN -v "$PWD:/w" "${IMAGE}@${DIGEST}" \
             push --asset "repository:github.com/${GITHUB_REPOSITORY}" --project vengeance --scanners vuln,secret,misconfig /w/repo.json
+      - uses: sigstore/cosign-installer@v4.1.3
+      - name: Sign the image (keyless)
+        run: cosign sign --yes "${IMAGE}@${{ steps.build.outputs.digest }}"

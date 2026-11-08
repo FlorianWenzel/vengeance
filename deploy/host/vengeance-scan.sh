@@ -40,11 +40,16 @@ while IFS='|' read -r image imageid; do
   case "$repo" in docker.io/library/*) repo="${repo#docker.io/library/}";; docker.io/*) repo="${repo#docker.io/}";; esac
   out="$work/img-$(echo "$repo" | tr '/:' '__').json"
   log "image $repo ($digest)"
+  # Read the image from containerd; k3s may have discarded compressed layers of some images,
+  # so fall back to pulling it from its registry by digest.
   if trivy image --quiet --skip-db-update --image-src containerd --scanners vuln,secret --timeout 15m \
-       -f json -o "$out" "$image"; then
+       -f json -o "$out" "$image" 2>"$work/err" ||
+     { log "containerd read failed, pulling $repo@$digest from the registry"; \
+       trivy image --quiet --skip-db-update --image-src remote --scanners vuln,secret --timeout 15m \
+       -f json -o "$out" "$repo@$digest" 2>>"$work/err"; }; then
     vengeance push --asset "image:$repo" --digest "$digest" --scanners vuln,secret "${proj[@]}" "$out" || failed=1
   else
-    log "scan of $image failed"; failed=1
+    log "scan of $image failed: $(tail -c 300 "$work/err")"; failed=1
   fi
 done < "$work/images.txt"
 
