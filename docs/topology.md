@@ -124,3 +124,31 @@ class Blueprint {
   p1 `#ff4d5e`, p2 `#ff8a3d`, p3 `#ffd166`, p4 `#7da7d9`, ok `#3ddc97`, unknown `#5b6478`.
   Stale elements blink slowly. Respect a `reduced_motion` flag (set via `set_reduced_motion(bool)`).
 - No text rendering in WebGL: all text is the HTML overlay built from `labels()`.
+
+## 4. Walk mode (first person)
+
+The same scene as a walkable datacenter. Hosts stand as racks in rows on a raised floor, with
+aisles between them; external assets live in the room too (e.g. repositories in a "library" shelf
+by the entrance, domains as uplink patch panels / antennas on a wall, registries as a storage
+cabinet). Everything stays readable from up close: rack fronts show their units and LEDs, signage
+above each rack names the host.
+
+Additional renderer API:
+
+```ts
+set_mode(mode: 'orbit' | 'walk'): void   // switching to walk spawns at the entrance facing the racks
+mode(): string
+key_down(code: string): void             // KeyboardEvent.code: KeyW/KeyA/KeyS/KeyD, arrows, ShiftLeft (run), KeyE (interact)
+key_up(code: string): void
+look(dx: number, dy: number): void       // pointer-lock movementX/Y in CSS pixels
+interact(): void                         // same as KeyE / a click while pointer-locked: select what the crosshair aims at
+minimap(): string                        // JSON: { player: {x, z, heading}, bounds: {minX, minZ, maxX, maxZ}, items: [{ id, kind, x, z, w, d, level }] }
+```
+
+- In walk mode `hovered()` is what the crosshair (canvas centre) aims at, within reach (~4 m).
+  `selected()` changes on `interact()`.
+- Collision: you cannot walk through racks, walls or furniture. Eye height ~1.7 m, walk ~1.4 m/s,
+  run ~3 m/s, smooth acceleration; head bob off when reduced motion is set.
+- `labels()` in walk mode returns only what is within ~8 m and in front of the player: host signs,
+  rack-unit (namespace) labels on the rack face, workload/image labels when closer than ~2 m.
+- Escape in walk mode is handled by the page (it exits pointer lock); `key("Escape")` is not sent.
