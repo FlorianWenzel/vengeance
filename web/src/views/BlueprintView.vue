@@ -309,7 +309,7 @@ function findingsLink(assetId: number | null) {
             tabindex="-1"
             class="bp-label pointer-events-auto absolute"
             :class="[`bp-${l.kind}`, `bp-at-${l.anchor ?? 'above'}`, { 'bp-active': l.id === selectedId || l.id === hoveredId }]"
-            :style="{ transform: `translate(${Math.round(l.x)}px, ${Math.round(l.y)}px)`, opacity: Math.max(0.35, 1 - l.depth * 0.6), zIndex: Math.round((1 - l.depth) * 100) }"
+            :style="{ transform: `translate(${Math.round(l.x)}px, ${Math.round(l.y)}px)`, opacity: Math.max(0.65, 1 - l.depth * 0.35), zIndex: Math.round((1 - l.depth) * 100) }"
             @click="focusId(l.id)"
           >
             <span class="bp-led" :style="{ background: LEVEL_VAR[(l.level as StatusLevel) || 'unknown'] }" />
@@ -321,7 +321,7 @@ function findingsLink(assetId: number | null) {
           <li v-for="lv in legend" :key="lv" class="flex items-center gap-1.5"><span class="bp-led" :style="{ background: LEVEL_VAR[lv] }" />{{ LEVEL_LABEL[lv] }}</li>
           <li class="flex items-center gap-1.5 text-fog-500">blinking = scan missing or stale</li>
         </ul>
-        <p class="absolute right-2 bottom-2 hidden rounded-[4px] bg-ink-950/80 px-2.5 py-1.5 text-[0.7rem] text-fog-500 md:block">
+        <p class="absolute top-2 right-2 hidden rounded-[4px] bg-ink-950/80 px-2.5 py-1.5 text-[0.7rem] text-fog-500 xl:block">
           drag to orbit · shift-drag to pan · scroll to zoom · click to inspect · Esc to zoom out
         </p>
       </div>
@@ -455,6 +455,10 @@ function findingsLink(assetId: number | null) {
 }
 .bp-at-inside {
   translate: 2px 2px;
+  background: transparent;
+  border-color: transparent;
+  color: #e3f1ff;
+  text-shadow: 0 0 3px #050c18, 0 0 6px #050c18;
 }
 .bp-at-below {
   translate: -50% 4px;
