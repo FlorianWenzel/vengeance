@@ -1,0 +1,5 @@
+# Mechanical formatting, no behaviour change. Skipped by `git blame` after:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# style: format with gofmt, rustfmt and prettier
+7ca4fb724a44e8a176610a010d464bdc531bf1b3
