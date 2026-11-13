@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { icons, type IconName } from '../lib/icons'
+import { computed } from "vue";
+import { icons, type IconName } from "../lib/icons";
 
-const props = withDefaults(defineProps<{ name: IconName; size?: number | string; label?: string }>(), { size: 16 })
-const body = computed(() => icons[props.name])
+const props = withDefaults(
+  defineProps<{ name: IconName; size?: number | string; label?: string }>(),
+  { size: 16 },
+);
+const body = computed(() => icons[props.name]);
 </script>
 
 <template>

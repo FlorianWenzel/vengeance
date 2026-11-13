@@ -176,10 +176,10 @@ type (
 		Workloads []Workload `json:"workloads"`
 	}
 	Workload struct {
-		ID      string  `json:"id"`
-		Name    string  `json:"name"`
-		Kind    string  `json:"kind"`
-		Ready   int     `json:"ready"`
+		ID        string  `json:"id"`
+		Name      string  `json:"name"`
+		Kind      string  `json:"kind"`
+		Ready     int     `json:"ready"`
 		Desired   int     `json:"desired"`
 		Misconfig int     `json:"misconfig"`
 		Status    Status  `json:"status"`

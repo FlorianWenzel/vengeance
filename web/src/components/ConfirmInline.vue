@@ -1,24 +1,29 @@
 <script setup lang="ts">
 // In-page confirmation (replaces window.confirm): shows a short question with
 // Cancel / Confirm buttons in place of the trigger.
-import { nextTick, ref } from 'vue'
+import { nextTick, ref } from "vue";
 
 withDefaults(
-  defineProps<{ question: string; confirmLabel?: string; busy?: boolean; testid?: string }>(),
-  { confirmLabel: 'Delete', busy: false },
-)
-const emit = defineEmits<{ confirm: [] }>()
-const asking = ref(false)
-const cancelBtn = ref<HTMLButtonElement | null>(null)
+  defineProps<{
+    question: string;
+    confirmLabel?: string;
+    busy?: boolean;
+    testid?: string;
+  }>(),
+  { confirmLabel: "Delete", busy: false },
+);
+const emit = defineEmits<{ confirm: [] }>();
+const asking = ref(false);
+const cancelBtn = ref<HTMLButtonElement | null>(null);
 
 function ask() {
-  asking.value = true
-  nextTick(() => cancelBtn.value?.focus())
+  asking.value = true;
+  nextTick(() => cancelBtn.value?.focus());
 }
 function cancel() {
-  asking.value = false
+  asking.value = false;
 }
-defineExpose({ cancel })
+defineExpose({ cancel });
 </script>
 
 <template>
@@ -32,9 +37,22 @@ defineExpose({ cancel })
       @keydown.esc.stop.prevent="cancel"
     >
       <span>{{ question }}</span>
-      <button ref="cancelBtn" type="button" class="btn btn-sm btn-ghost" @click="cancel">Cancel</button>
-      <button type="button" class="btn btn-sm btn-danger" :disabled="busy" :data-testid="testid" @click="emit('confirm')">
-        {{ busy ? 'Working…' : confirmLabel }}
+      <button
+        ref="cancelBtn"
+        type="button"
+        class="btn btn-sm btn-ghost"
+        @click="cancel"
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        class="btn btn-sm btn-danger"
+        :disabled="busy"
+        :data-testid="testid"
+        @click="emit('confirm')"
+      >
+        {{ busy ? "Working…" : confirmLabel }}
       </button>
     </span>
   </span>

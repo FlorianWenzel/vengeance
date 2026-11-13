@@ -44,6 +44,7 @@ Vengeance is that answer, in one container and a Postgres database.
 <td width="50%" valign="top">
 
 ### One inbox, no duplicates
+
 Trivy (image, fs, repo, rootfs, k8s) and SARIF from any tool (Semgrep, CodeQL, gosec, Checkov…)
 land in one list. The same CVE in the same package of the same asset is **one finding**, no matter how
 many scanners or rescans report it. A rescan that no longer sees it **closes it**; if it comes back,
@@ -57,6 +58,7 @@ it reopens with its history.
 <td valign="top">
 
 ### Fixes, not just findings
+
 Findings are grouped by **the upgrade that resolves them**: "bump libexpat to 2.7.0, closes 5 findings"
 is one task. Every group comes with a copy-ready command for npm, Go, pip, cargo, apk, apt and more.
 Priorities P1–P4 combine severity, fix availability, exposure (`internet-facing`) and
@@ -68,6 +70,7 @@ Priorities P1–P4 combine severity, fix availability, exposure (`internet-facin
 <td valign="top">
 
 ### Know what nobody is scanning
+
 Keep an inventory of repositories, images, hosts, clusters and domains, say what each kind needs
 ("images: vulnerability and secret scans every 7 days"), and see every gap. Scanners can't tell you
 about the things they were never pointed at; Vengeance can.
@@ -80,6 +83,7 @@ about the things they were never pointed at; Vengeance can.
 <td valign="top">
 
 ### See your infrastructure
+
 The **Blueprint** draws your servers as racks, apps as rack units and containers as chips, each with
 a status light for its worst open finding. Zoom in, click anything, jump to its findings.
 Rendered in Rust → WebAssembly → WebGL2, ~150 KB over the wire.
@@ -90,6 +94,7 @@ Rendered in Rust → WebAssembly → WebGL2, ~150 KB over the wire.
 <td valign="top">
 
 ### …or walk through it
+
 **Walk mode** turns the same data into a noir city at night. Servers are buildings, apps are floors,
 workloads are windows. P1s are **fires**, P2s **broken glass**, misconfigurations **open windows**,
 leaked secrets **keys left in the lock**, unscanned blocks have their **street lamps out**. Your repos
@@ -104,17 +109,18 @@ Aim at anything and it tells you what's wrong.
 <td valign="top">
 
 ### Talk to it from Claude (MCP)
-Vengeance is an MCP server. Ask *"what should I patch first this week?"*, *"which images in the
-cluster are known-exploited?"*, or pair it with a GitHub MCP: *"compare my repos with the inventory
-and add the missing ones."* Read-only and read-write tokens, revocable per assistant.
+
+Vengeance is an MCP server. Ask _"what should I patch first this week?"_, _"which images in the
+cluster are known-exploited?"_, or pair it with a GitHub MCP: _"compare my repos with the inventory
+and add the missing ones."_ Read-only and read-write tokens, revocable per assistant.
 
 </td>
 </tr>
 </table>
 
-**And:** triage with states that mean something (accepted risk *always* has an end date, false
-positives *always* have a reason), notifications by **email, [ntfy](https://ntfy.sh) or signed
-webhook** with instant or digest delivery, a "*your nightly scan went quiet*" alarm, and OIDC sign-in.
+**And:** triage with states that mean something (accepted risk _always_ has an end date, false
+positives _always_ have a reason), notifications by **email, [ntfy](https://ntfy.sh) or signed
+webhook** with instant or digest delivery, a "_your nightly scan went quiet_" alarm, and OIDC sign-in.
 
 <p align="center"><img src="docs/screenshots/walk.webp" alt="Walk mode: arriving on the square at night, looking down the main street" width="85%"></p>
 
@@ -169,6 +175,7 @@ semgrep --sarif -o semgrep.sarif && vengeance push --format sarif semgrep.sarif
     docker run --rm -e VENGEANCE_URL -e VENGEANCE_TOKEN -v "$PWD:/w" --entrypoint vengeance ghcr.io/florianwenzel/vengeance:latest \
       push --asset "repository:github.com/${GITHUB_REPOSITORY}" --scanners vuln,secret,misconfig /w/trivy.json
 ```
+
 </details>
 
 <details>
@@ -203,19 +210,20 @@ the redirect URI is `$VENGEANCE_BASE_URL/auth/callback`.
 <details>
 <summary><b>All settings</b></summary>
 
-| Variable | Required | Meaning |
-|---|---|---|
-| `VENGEANCE_DATABASE_URL` | yes | Postgres URL |
-| `VENGEANCE_BASE_URL` | yes | public URL, e.g. `https://vengeance.example.com` |
-| `VENGEANCE_SECRET` | yes | 32+ random characters, signs the login flow |
-| `VENGEANCE_OIDC_ISSUER` | yes | OIDC issuer URL |
-| `VENGEANCE_OIDC_CLIENT_ID` / `_CLIENT_SECRET` | yes | OIDC client |
-| `VENGEANCE_OIDC_ALLOWED_EMAILS` / `_ALLOWED_DOMAINS` | one of | who may sign in (comma separated) |
-| `VENGEANCE_OIDC_ALLOW_ALL` | | `true` if the provider already restricts who can sign in |
-| `VENGEANCE_SMTP_HOST`, `_PORT`, `_USER`, `_PASSWORD`, `_FROM`, `_TLS` | for email | `_TLS` is `starttls` (default), `tls` or `none` |
-| `VENGEANCE_KEV_URL` | | defaults to CISA's catalogue on GitHub (`cisagov/kev-data`); `off` disables the daily sync |
-| `VENGEANCE_LISTEN` | | default `:8080` |
-| `VENGEANCE_MAX_REPORT_MIB` | | upload limit, default 64 |
+| Variable                                                              | Required  | Meaning                                                                                    |
+| --------------------------------------------------------------------- | --------- | ------------------------------------------------------------------------------------------ |
+| `VENGEANCE_DATABASE_URL`                                              | yes       | Postgres URL                                                                               |
+| `VENGEANCE_BASE_URL`                                                  | yes       | public URL, e.g. `https://vengeance.example.com`                                           |
+| `VENGEANCE_SECRET`                                                    | yes       | 32+ random characters, signs the login flow                                                |
+| `VENGEANCE_OIDC_ISSUER`                                               | yes       | OIDC issuer URL                                                                            |
+| `VENGEANCE_OIDC_CLIENT_ID` / `_CLIENT_SECRET`                         | yes       | OIDC client                                                                                |
+| `VENGEANCE_OIDC_ALLOWED_EMAILS` / `_ALLOWED_DOMAINS`                  | one of    | who may sign in (comma separated)                                                          |
+| `VENGEANCE_OIDC_ALLOW_ALL`                                            |           | `true` if the provider already restricts who can sign in                                   |
+| `VENGEANCE_SMTP_HOST`, `_PORT`, `_USER`, `_PASSWORD`, `_FROM`, `_TLS` | for email | `_TLS` is `starttls` (default), `tls` or `none`                                            |
+| `VENGEANCE_KEV_URL`                                                   |           | defaults to CISA's catalogue on GitHub (`cisagov/kev-data`); `off` disables the daily sync |
+| `VENGEANCE_LISTEN`                                                    |           | default `:8080`                                                                            |
+| `VENGEANCE_MAX_REPORT_MIB`                                            |           | upload limit, default 64                                                                   |
+
 </details>
 
 ## Talk to it from Claude (MCP)
@@ -227,8 +235,8 @@ claude mcp add --transport http vengeance https://vengeance.example.com/mcp \
   --header "Authorization: Bearer vgp_…"
 ```
 
-| Read | Write (read-write tokens) |
-|---|---|
+| Read                                                                                                                                                                  | Write (read-write tokens)                         |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
 | `vengeance_overview`, `list_findings`, `get_finding`, `list_fixes`, `list_assets`, `get_asset`, `get_coverage`, `get_infrastructure`, `list_projects`, `list_sources` | `triage_findings`, `create_asset`, `update_asset` |
 
 Triage done by an assistant is recorded in the finding's history as `mcp:<token name>`.
@@ -296,12 +304,12 @@ VENGEANCE_OIDC_CLIENT_ID=vengeance VENGEANCE_OIDC_CLIENT_SECRET=dev-secret \
 VENGEANCE_OIDC_ALLOWED_EMAILS=admin@example.com go run ./cmd/vengeance serve
 ```
 
-| Tests | Command |
-|---|---|
-| Go (needs Postgres) | `VENGEANCE_TEST_DATABASE_URL=postgres://… go test -p 1 ./...` |
-| Renderer | `cd viz && cargo test` |
-| End to end (Playwright, real stack incl. OIDC and SMTP) | `docker compose up -d --build && cd e2e && npm ci && npx playwright test` |
-| README screenshots (on an empty stack) | `cd e2e && SCREENSHOTS=1 npx playwright test demo/`, then convert to WebP: `for f in ../docs/screenshots/*.png; do cwebp -q 82 -resize 1600 0 "$f" -o "${f%.png}.webp" && rm "$f"; done` |
+| Tests                                                   | Command                                                                                                                                                                                  |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Go (needs Postgres)                                     | `VENGEANCE_TEST_DATABASE_URL=postgres://… go test -p 1 ./...`                                                                                                                            |
+| Renderer                                                | `cd viz && cargo test`                                                                                                                                                                   |
+| End to end (Playwright, real stack incl. OIDC and SMTP) | `docker compose up -d --build && cd e2e && npm ci && npx playwright test`                                                                                                                |
+| README screenshots (on an empty stack)                  | `cd e2e && SCREENSHOTS=1 npx playwright test demo/`, then convert to WebP: `for f in ../docs/screenshots/*.png; do cwebp -q 82 -resize 1600 0 "$f" -o "${f%.png}.webp" && rm "$f"; done` |
 
 Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
 

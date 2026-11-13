@@ -1,7 +1,13 @@
 <script setup lang="ts">
-import type { Severity } from '../lib/types'
-defineProps<{ severity: Severity }>()
-const bars: Record<Severity, number> = { critical: 4, high: 3, medium: 2, low: 1, unknown: 0 }
+import type { Severity } from "../lib/types";
+defineProps<{ severity: Severity }>();
+const bars: Record<Severity, number> = {
+  critical: 4,
+  high: 3,
+  medium: 2,
+  low: 1,
+  unknown: 0,
+};
 </script>
 
 <template>

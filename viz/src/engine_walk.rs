@@ -4,10 +4,10 @@
 use glam::{Vec2, Vec3, Vec4Swizzles};
 use serde::Serialize;
 
-use crate::engine::{Engine, Label, Mode};
-use crate::layout::{self, Kind, Layout};
 use crate::city::{self, beam_dir};
+use crate::engine::{Engine, Label, Mode};
 use crate::geo::{rgba, GLOW};
+use crate::layout::{self, Kind, Layout};
 use crate::walk::{self, Walker, EYE, REACH};
 
 const GLIDE_MS: f64 = 900.0;
@@ -95,8 +95,13 @@ impl Engine {
 
     /// Rebuild the layout for the current mode from the stored scene, keeping ids.
     pub(crate) fn rebuild(&mut self) {
-        let id_of = |l: &Layout, i: Option<usize>| i.and_then(|i| l.nodes.get(i)).map(|n| n.id.clone());
-        let (f, s, h) = (id_of(&self.layout, self.focus), id_of(&self.layout, self.selected), id_of(&self.layout, self.hovered));
+        let id_of =
+            |l: &Layout, i: Option<usize>| i.and_then(|i| l.nodes.get(i)).map(|n| n.id.clone());
+        let (f, s, h) = (
+            id_of(&self.layout, self.focus),
+            id_of(&self.layout, self.selected),
+            id_of(&self.layout, self.hovered),
+        );
         self.layout = match self.mode {
             Mode::Orbit => layout::build(&self.scene),
             Mode::Walk => city::build_city(&self.scene),
@@ -116,7 +121,9 @@ impl Engine {
 
     /// After a scene refresh while walking: keep the player unless they now stand inside something.
     pub(crate) fn after_walk_rebuild(&mut self) {
-        let Some(room) = self.layout.room.as_ref() else { return };
+        let Some(room) = self.layout.room.as_ref() else {
+            return;
+        };
         if !self.has_scene || walk::blocked(self.walker.pos, &room.colliders) {
             self.walk_respawn(false);
         }
@@ -124,11 +131,14 @@ impl Engine {
     }
 
     pub(crate) fn walk_respawn(&mut self, glide: bool) {
-        let Some(room) = self.layout.room.as_ref() else { return };
+        let Some(room) = self.layout.room.as_ref() else {
+            return;
+        };
         let (spawn, heading) = (room.spawn, room.spawn_heading);
         if glide {
             let ms = if self.reduced_motion { 0.0 } else { GLIDE_MS };
-            self.walker.glide_to(Vec2::new(spawn.x, spawn.z), heading, -0.06, self.now, ms);
+            self.walker
+                .glide_to(Vec2::new(spawn.x, spawn.z), heading, -0.06, self.now, ms);
         } else {
             let keys = self.walker.keys;
             self.walker = Walker::spawn(spawn, heading);
@@ -205,7 +215,9 @@ impl Engine {
     }
 
     pub(crate) fn walk_pointer_up(&mut self, x: f32, y: f32, button: i32) {
-        let Some((_, _, moved)) = self.look_drag.take() else { return };
+        let Some((_, _, moved)) = self.look_drag.take() else {
+            return;
+        };
         if button == 0 && !moved {
             self.selected = self.pick_walk(x, y);
             self.dirty = true;
@@ -216,7 +228,9 @@ impl Engine {
     pub(crate) fn walk_to(&mut self, idx: usize) {
         self.selected = Some(idx);
         self.dirty = true;
-        let Some(city) = self.layout.room.as_ref() else { return };
+        let Some(city) = self.layout.room.as_ref() else {
+            return;
+        };
         let n = &self.layout.nodes[idx];
         let b = n.body;
         let c = b.center();
@@ -264,7 +278,12 @@ impl Engine {
             Some(city) => self.walker.step(now, dt, &city.colliders),
             None => self.walker.step(now, dt, &[]),
         };
-        let beams_move = !self.reduced_motion && self.layout.room.as_ref().is_some_and(|c| c.beams.iter().any(|b| b.on));
+        let beams_move = !self.reduced_motion
+            && self
+                .layout
+                .room
+                .as_ref()
+                .is_some_and(|c| c.beams.iter().any(|b| b.on));
         if changed || self.cam.fps.is_none() {
             self.sync_fps();
             self.dirty = true;
@@ -279,12 +298,18 @@ impl Engine {
     pub(crate) fn rebuild_dynamic(&mut self) {
         self.dynamic.clear();
         self.dynamic_version += 1;
-        let Some(city) = self.layout.room.as_ref() else { return };
+        let Some(city) = self.layout.room.as_ref() else {
+            return;
+        };
         for beam in city.beams.iter().filter(|b| b.on) {
             let dir = beam_dir(beam, self.now, self.reduced_motion);
             let len = 150.0;
             let hovered = self.hovered == Some(beam.node) || self.selected == Some(beam.node);
-            let tint = if hovered { [1.0, 0.85, 0.55] } else { [0.75, 0.85, 1.0] };
+            let tint = if hovered {
+                [1.0, 0.85, 0.55]
+            } else {
+                [0.75, 0.85, 1.0]
+            };
             let seg = 8;
             for s in 0..seg {
                 let t0 = s as f32 / seg as f32;
@@ -293,7 +318,14 @@ impl Engine {
                 let b = beam.origin + dir * len * t1;
                 let fade = 1.0 - t0;
                 for (w, alpha) in [(3.0, 0.5), (14.0, 0.14), (40.0, 0.06)] {
-                    self.dynamic.line(a, b, rgba(tint, alpha * fade), w * (1.0 + t0 * 1.5), crate::geo::Lod::ALWAYS, GLOW);
+                    self.dynamic.line(
+                        a,
+                        b,
+                        rgba(tint, alpha * fade),
+                        w * (1.0 + t0 * 1.5),
+                        crate::geo::Lod::ALWAYS,
+                        GLOW,
+                    );
                 }
             }
         }
@@ -369,7 +401,16 @@ impl Engine {
             meaning: &'a str,
         }
         match self.hovered.map(|i| &self.layout.nodes[i]) {
-            Some(n) => serde_json::to_string(&Aim { id: &n.id, title: if n.title.is_empty() { &n.text } else { &n.title }, meaning: &n.meaning }).unwrap_or_else(|_| "null".into()),
+            Some(n) => serde_json::to_string(&Aim {
+                id: &n.id,
+                title: if n.title.is_empty() {
+                    &n.text
+                } else {
+                    &n.title
+                },
+                meaning: &n.meaning,
+            })
+            .unwrap_or_else(|_| "null".into()),
             None => "null".into(),
         }
     }
@@ -390,9 +431,18 @@ impl Engine {
             return false;
         }
         let dir = d / len;
-        let blocked = |b: &crate::geo::Aabb| !b.contains(eye) && b.ray_hit(eye, dir).is_some_and(|t| t < len - 0.3);
-        self.layout.hosts.iter().any(|&h| h != own && blocked(&self.layout.nodes[h].body))
-            || self.layout.room.as_ref().is_some_and(|c| c.blockers.iter().any(|b| !b.contains(p) && blocked(b)))
+        let blocked = |b: &crate::geo::Aabb| {
+            !b.contains(eye) && b.ray_hit(eye, dir).is_some_and(|t| t < len - 0.3)
+        };
+        self.layout
+            .hosts
+            .iter()
+            .any(|&h| h != own && blocked(&self.layout.nodes[h].body))
+            || self
+                .layout
+                .room
+                .as_ref()
+                .is_some_and(|c| c.blockers.iter().any(|b| !b.contains(p) && blocked(b)))
     }
 
     fn ancestor_of_kind(&self, i: usize, k: Kind) -> Option<usize> {
@@ -484,7 +534,10 @@ impl Engine {
             if l.kind != "group" || l.selected || l.hovered {
                 return true;
             }
-            if kept.iter().any(|&(x, y)| (l.y - y).abs() < 16.0 && (l.x - x).abs() < 140.0) {
+            if kept
+                .iter()
+                .any(|&(x, y)| (l.y - y).abs() < 16.0 && (l.x - x).abs() < 140.0)
+            {
                 return false;
             }
             kept.push((l.x, l.y));
@@ -498,10 +551,24 @@ impl Engine {
 
     pub fn minimap_json(&self) -> String {
         let (player, bounds) = match self.mode {
-            Mode::Walk => (Player { x: round2(self.walker.pos.x), z: round2(self.walker.pos.y), heading: round2(self.walker.heading) }, self.layout.bounds),
+            Mode::Walk => (
+                Player {
+                    x: round2(self.walker.pos.x),
+                    z: round2(self.walker.pos.y),
+                    heading: round2(self.walker.heading),
+                },
+                self.layout.bounds,
+            ),
             Mode::Orbit => {
                 let p = self.cam.pose;
-                (Player { x: round2(p.target.x), z: round2(p.target.z), heading: round2(-p.yaw) }, self.layout.bounds.map(|b| b.grow(0.9)))
+                (
+                    Player {
+                        x: round2(p.target.x),
+                        z: round2(p.target.z),
+                        heading: round2(-p.yaw),
+                    },
+                    self.layout.bounds.map(|b| b.grow(0.9)),
+                )
             }
         };
         let mut items = Vec::new();
@@ -535,20 +602,36 @@ impl Engine {
         for (id, kind, b, level) in &raw {
             let c = b.center();
             let s = b.size();
-            items.push(Item { id, kind, x: round2(c.x), z: round2(c.z), w: round2(s.x), d: round2(s.z), level });
+            items.push(Item {
+                id,
+                kind,
+                x: round2(c.x),
+                z: round2(c.z),
+                w: round2(s.x),
+                d: round2(s.z),
+                level,
+            });
         }
         // Streets and squares first so buildings draw on top.
         items.sort_by_key(|it| !matches!(it.kind, "square" | "quay" | "street"));
         let b = bounds.unwrap_or(crate::geo::Aabb::new(Vec3::splat(-1.0), Vec3::splat(1.0)));
         let b = match &self.layout.room {
             // The minimap shows the walkable city, not the water and sky beyond it.
-            Some(c) => crate::geo::Aabb::new(Vec3::new(b.min.x, 0.0, b.min.z), Vec3::new(c.water_x + 4.0, 0.0, b.max.z)),
+            Some(c) => crate::geo::Aabb::new(
+                Vec3::new(b.min.x, 0.0, b.min.z),
+                Vec3::new(c.water_x + 4.0, 0.0, b.max.z),
+            ),
             None => b,
         };
         let m = Minimap {
             mode: self.mode_name(),
             player,
-            bounds: Bounds { min_x: round2(b.min.x), min_z: round2(b.min.z), max_x: round2(b.max.x), max_z: round2(b.max.z) },
+            bounds: Bounds {
+                min_x: round2(b.min.x),
+                min_z: round2(b.min.z),
+                max_x: round2(b.max.x),
+                max_z: round2(b.max.z),
+            },
             items,
         };
         serde_json::to_string(&m).unwrap_or_else(|_| "{}".into())
@@ -600,12 +683,23 @@ mod tests {
         let host = &e.layout.nodes[e.layout.hosts[0]];
         let to = host.body.center() - e.cam.eye();
         let f = e.walker.forward();
-        assert!(Vec2::new(to.x, to.z).normalize().dot(Vec2::new(f.x, f.z).normalize()) > 0.8);
+        assert!(
+            Vec2::new(to.x, to.z)
+                .normalize()
+                .dot(Vec2::new(f.x, f.z).normalize())
+                > 0.8
+        );
         assert!((e.cam.eye().y - EYE).abs() < 0.05);
         // Floor names and the building sign are readable from the square.
         let labels = e.labels();
         assert!(labels.iter().any(|l| l.kind == "host"));
-        assert!(labels.iter().any(|l| l.kind == "group" && !l.meaning.is_empty()), "{}", e.labels_json());
+        assert!(
+            labels
+                .iter()
+                .any(|l| l.kind == "group" && !l.meaning.is_empty()),
+            "{}",
+            e.labels_json()
+        );
     }
 
     #[test]
@@ -621,7 +715,11 @@ mod tests {
         run(&mut e, 8.0);
         e.key_up("KeyW");
         run(&mut e, 0.5);
-        assert!(e.walker.pos.y > host.max.z + walk::RADIUS - 0.01, "walked into the building at {}", e.walker.pos);
+        assert!(
+            e.walker.pos.y > host.max.z + walk::RADIUS - 0.01,
+            "walked into the building at {}",
+            e.walker.pos
+        );
     }
 
     #[test]
@@ -640,7 +738,13 @@ mod tests {
         e.interact();
         assert!(e.selected.is_some());
         // Window labels for the aimed floor show, with meanings.
-        assert!(e.labels().iter().any(|l| l.kind == "workload" && l.meaning.contains("window")), "{}", e.labels_json());
+        assert!(
+            e.labels()
+                .iter()
+                .any(|l| l.kind == "workload" && l.meaning.contains("window")),
+            "{}",
+            e.labels_json()
+        );
     }
 
     #[test]
@@ -668,16 +772,28 @@ mod tests {
         let mut e = walking();
         let v: serde_json::Value = serde_json::from_str(&e.minimap_json()).unwrap();
         let items = v["items"].as_array().unwrap();
-        for k in ["building", "library", "warehouse", "street", "door", "square"] {
+        for k in [
+            "building",
+            "library",
+            "warehouse",
+            "street",
+            "door",
+            "square",
+        ] {
             assert!(items.iter().any(|i| i["kind"] == k), "no {k}");
         }
-        assert!(items.iter().any(|i| i["kind"] == "building" && i["id"] == "host:12"));
+        assert!(items
+            .iter()
+            .any(|i| i["kind"] == "building" && i["id"] == "host:12"));
         let z0 = v["player"]["z"].as_f64().unwrap();
         let x0 = v["player"]["x"].as_f64().unwrap();
         e.key_down("KeyW");
         run(&mut e, 1.0);
         let v: serde_json::Value = serde_json::from_str(&e.minimap_json()).unwrap();
-        let (x1, z1) = (v["player"]["x"].as_f64().unwrap(), v["player"]["z"].as_f64().unwrap());
+        let (x1, z1) = (
+            v["player"]["x"].as_f64().unwrap(),
+            v["player"]["z"].as_f64().unwrap(),
+        );
         assert!(x1 > x0 + 0.8 && (z1 - z0).abs() < 0.5);
     }
 
@@ -695,9 +811,15 @@ mod tests {
         e.reduced_motion = true; // freeze the sweep
         e.look(0.0, 0.0);
         let h = e.hovered.map(|h| e.layout.nodes[h].id.clone());
-        assert!(h.as_deref().is_some_and(|id| id.starts_with("source:")), "aimed at {h:?}");
+        assert!(
+            h.as_deref().is_some_and(|id| id.starts_with("source:")),
+            "aimed at {h:?}"
+        );
         let v: serde_json::Value = serde_json::from_str(&e.aim_info_json()).unwrap();
-        assert!(v["meaning"].as_str().unwrap().contains("searchlight sweeping"));
+        assert!(v["meaning"]
+            .as_str()
+            .unwrap()
+            .contains("searchlight sweeping"));
         run(&mut e, 0.2);
         assert!(e.dynamic.line_count() > 0);
     }

@@ -25,14 +25,14 @@ Errors always look like `{ "error": "human readable message" }` with a 4xx/5xx s
 
 Query parameters:
 
-| name | required | meaning |
-|---|---|---|
-| `format` | yes | `trivy` or `sarif` |
-| `asset` | no | `kind:identifier`, e.g. `image:ghcr.io/x/api`, `repository:github.com/x/y`, `host:node1`, `cluster:prod`. Derived from the Trivy report if omitted. |
-| `name` | no | display name for a newly created asset |
-| `project` | no | project name; created if missing; only applied when the asset is new |
-| `scanners` | no | comma list of `vuln,secret,misconfig,sast`. Inferred from the report if omitted. |
-| `digest` | no | image digest that was scanned |
+| name       | required | meaning                                                                                                                                             |
+| ---------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `format`   | yes      | `trivy` or `sarif`                                                                                                                                  |
+| `asset`    | no       | `kind:identifier`, e.g. `image:ghcr.io/x/api`, `repository:github.com/x/y`, `host:node1`, `cluster:prod`. Derived from the Trivy report if omitted. |
+| `name`     | no       | display name for a newly created asset                                                                                                              |
+| `project`  | no       | project name; created if missing; only applied when the asset is new                                                                                |
+| `scanners` | no       | comma list of `vuln,secret,misconfig,sast`. Inferred from the report if omitted.                                                                    |
+| `digest`   | no       | image digest that was scanned                                                                                                                       |
 
 Body: the raw report. Response `200`:
 
@@ -45,37 +45,53 @@ A Trivy `k8s` report (`trivy k8s -f json`) creates one finding target per worklo
 ## Types
 
 ```ts
-type Priority = 1 | 2 | 3 | 4            // 1 = most urgent
-type State = 'new' | 'acknowledged' | 'fixed' | 'accepted' | 'false_positive'
-type Kind = 'vuln' | 'secret' | 'misconfig' | 'sast'
-type AssetKind = 'repository' | 'image' | 'host' | 'cluster' | 'domain' | 'registry'
-type ScanType = 'vuln' | 'secret' | 'misconfig' | 'sast'
+type Priority = 1 | 2 | 3 | 4; // 1 = most urgent
+type State = "new" | "acknowledged" | "fixed" | "accepted" | "false_positive";
+type Kind = "vuln" | "secret" | "misconfig" | "sast";
+type AssetKind =
+  "repository" | "image" | "host" | "cluster" | "domain" | "registry";
+type ScanType = "vuln" | "secret" | "misconfig" | "sast";
 
 interface Finding {
-  id: number
-  assetId: number; assetName: string; assetKind: AssetKind; projectName: string | null
-  kind: Kind
-  advisoryId: string          // CVE-…, GHSA-…, rule id for secrets/misconfig
-  title: string
-  severity: 'critical' | 'high' | 'medium' | 'low' | 'unknown'
-  priority: Priority
-  pkgName: string | null; pkgEcosystem: string | null
-  installedVersion: string | null; fixedVersion: string | null
-  target: string              // file, layer or workload the finding is in
-  state: State; stateReason: string | null; acceptedUntil: string | null
-  firstSeen: string; lastSeen: string; fixedAt: string | null
-  kev: boolean; cvss: number | null
-  sources: string[]           // names of sources currently reporting it
+  id: number;
+  assetId: number;
+  assetName: string;
+  assetKind: AssetKind;
+  projectName: string | null;
+  kind: Kind;
+  advisoryId: string; // CVE-…, GHSA-…, rule id for secrets/misconfig
+  title: string;
+  severity: "critical" | "high" | "medium" | "low" | "unknown";
+  priority: Priority;
+  pkgName: string | null;
+  pkgEcosystem: string | null;
+  installedVersion: string | null;
+  fixedVersion: string | null;
+  target: string; // file, layer or workload the finding is in
+  state: State;
+  stateReason: string | null;
+  acceptedUntil: string | null;
+  firstSeen: string;
+  lastSeen: string;
+  fixedAt: string | null;
+  kev: boolean;
+  cvss: number | null;
+  sources: string[]; // names of sources currently reporting it
 }
 
 interface FixGroup {
-  key: string
-  assetId: number; assetName: string
-  pkgName: string; ecosystem: string
-  installedVersion: string; targetVersion: string
-  command: string             // copy-ready, e.g. "npm install multer@2.5.0"
-  findings: number; maxPriority: Priority; kev: boolean
-  advisories: string[]
+  key: string;
+  assetId: number;
+  assetName: string;
+  pkgName: string;
+  ecosystem: string;
+  installedVersion: string;
+  targetVersion: string;
+  command: string; // copy-ready, e.g. "npm install multer@2.5.0"
+  findings: number;
+  maxPriority: Priority;
+  kev: boolean;
+  advisories: string[];
 }
 ```
 
@@ -119,13 +135,25 @@ events: [{ at, actor, fromState, toState, note }] }`
 
 ```ts
 interface Asset {
-  id: number; kind: AssetKind; identifier: string; name: string
-  projectId: number | null; projectName: string | null
-  tags: string[]; retiredAt: string | null; createdAt: string; lastScanAt: string | null
-  discovered: boolean          // created by an ingest rather than by hand
-  open: { p1: number; p2: number; p3: number; p4: number; total: number }
-  coverage: { scanType: ScanType; lastAt: string | null; maxAgeDays: number; ok: boolean }[]
-  covered: boolean             // every expected scan type is fresh
+  id: number;
+  kind: AssetKind;
+  identifier: string;
+  name: string;
+  projectId: number | null;
+  projectName: string | null;
+  tags: string[];
+  retiredAt: string | null;
+  createdAt: string;
+  lastScanAt: string | null;
+  discovered: boolean; // created by an ingest rather than by hand
+  open: { p1: number; p2: number; p3: number; p4: number; total: number };
+  coverage: {
+    scanType: ScanType;
+    lastAt: string | null;
+    maxAgeDays: number;
+    ok: boolean;
+  }[];
+  covered: boolean; // every expected scan type is fresh
 }
 ```
 
@@ -148,8 +176,25 @@ Tag `internet-facing` raises priority (see Prioritisation).
 ```json
 {
   "score": 0.72,
-  "byProject": [ { "projectId": 1, "name": "slowbloom", "score": 0.8, "assets": 10, "gaps": 2 } ],
-  "gaps": [ { "assetId": 3, "assetName": "ghost", "assetKind": "image", "scanType": "secret", "lastAt": null, "maxAgeDays": 7 } ]
+  "byProject": [
+    {
+      "projectId": 1,
+      "name": "slowbloom",
+      "score": 0.8,
+      "assets": 10,
+      "gaps": 2
+    }
+  ],
+  "gaps": [
+    {
+      "assetId": 3,
+      "assetName": "ghost",
+      "assetKind": "image",
+      "scanType": "secret",
+      "lastAt": null,
+      "maxAgeDays": 7
+    }
+  ]
 }
 ```
 

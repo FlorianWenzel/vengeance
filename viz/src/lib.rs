@@ -4,13 +4,13 @@
 //! The contract with the page lives in `docs/topology.md` (sections 2 and 3).
 
 pub mod camera;
+pub mod city;
 pub mod engine;
 mod engine_walk;
 pub mod geo;
 pub mod layout;
-pub mod city;
-pub mod walk;
 pub mod scene;
+pub mod walk;
 
 #[cfg(target_arch = "wasm32")]
 mod gl;
@@ -45,9 +45,13 @@ mod wasm {
         /// Creates a WebGL2 context on the canvas. Throws when WebGL2 is unavailable.
         #[wasm_bindgen(constructor)]
         pub fn new(canvas: HtmlCanvasElement) -> Result<Blueprint, JsValue> {
-            let renderer = Renderer::new(&canvas).map_err(|e| JsValue::from(js_sys::Error::new(&e)))?;
+            let renderer =
+                Renderer::new(&canvas).map_err(|e| JsValue::from(js_sys::Error::new(&e)))?;
             let mut engine = Engine::new();
-            let (w, h) = (canvas.client_width().max(1) as f32, canvas.client_height().max(1) as f32);
+            let (w, h) = (
+                canvas.client_width().max(1) as f32,
+                canvas.client_height().max(1) as f32,
+            );
             engine.resize(w, h, 1.0);
             // Shift+drag pans; pointer events from the page do not carry modifiers, so track them here.
             let shift = Rc::new(Cell::new(false));
@@ -60,7 +64,12 @@ mod wasm {
                     listeners.push((ev, cb));
                 }
             }
-            Ok(Blueprint { engine, renderer, shift, listeners })
+            Ok(Blueprint {
+                engine,
+                renderer,
+                shift,
+                listeners,
+            })
         }
 
         /// (Re)builds the geometry. Keeps the camera when the focused/visible ids persist.
@@ -72,8 +81,10 @@ mod wasm {
         }
 
         pub fn resize(&mut self, css_width: f32, css_height: f32, device_pixel_ratio: f32) {
-            self.engine.resize(css_width, css_height, device_pixel_ratio);
-            self.renderer.resize(self.engine.css_w, self.engine.css_h, self.engine.dpr);
+            self.engine
+                .resize(css_width, css_height, device_pixel_ratio);
+            self.renderer
+                .resize(self.engine.css_w, self.engine.css_h, self.engine.dpr);
         }
 
         pub fn set_reduced_motion(&mut self, reduced: bool) {
@@ -175,7 +186,8 @@ mod wasm {
         fn drop(&mut self) {
             if let Some(win) = web_sys::window() {
                 for (ev, cb) in self.listeners.drain(..) {
-                    let _ = win.remove_event_listener_with_callback(ev, cb.as_ref().unchecked_ref());
+                    let _ =
+                        win.remove_event_listener_with_callback(ev, cb.as_ref().unchecked_ref());
                 }
             }
         }

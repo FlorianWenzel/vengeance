@@ -8,11 +8,11 @@ import (
 
 // PriorityInput is what priority depends on.
 type PriorityInput struct {
-	Kind       string
-	Severity   string
-	HasFix     bool
-	KEV        bool
-	AssetTags  []string
+	Kind      string
+	Severity  string
+	HasFix    bool
+	KEV       bool
+	AssetTags []string
 }
 
 // Priority returns 1 (most urgent) to 4. See docs/api.md "Prioritisation".

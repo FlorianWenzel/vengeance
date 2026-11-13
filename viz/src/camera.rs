@@ -57,7 +57,12 @@ fn wrap_angle(a: f32) -> f32 {
 impl Default for Camera {
     fn default() -> Self {
         Camera {
-            pose: Pose { target: Vec3::new(0.0, 1.0, 0.0), yaw: 0.6, pitch: 0.45, dist: 6.0 },
+            pose: Pose {
+                target: Vec3::new(0.0, 1.0, 0.0),
+                yaw: 0.6,
+                pitch: 0.45,
+                dist: 6.0,
+            },
             fovy: 38f32.to_radians(),
             aspect: 1.5,
             max_dist: 60.0,
@@ -172,12 +177,17 @@ impl Camera {
 
     /// Advance a running flight. Returns true when the pose changed.
     pub fn update(&mut self, now: f64) -> bool {
-        let Some((from, to, t0, dur)) = self.flight else { return false };
+        let Some((from, to, t0, dur)) = self.flight else {
+            return false;
+        };
         let t = (((now - t0) / dur) as f32).clamp(0.0, 1.0);
         let e = ease(t);
         // Arc out slightly on long flights so the motion reads as a camera move, not a zoom.
         let span = from.target.distance(to.target);
-        let lift = 1.0 + (span / (from.dist + to.dist + 1e-3)).min(1.0) * 0.35 * (std::f32::consts::PI * e).sin();
+        let lift = 1.0
+            + (span / (from.dist + to.dist + 1e-3)).min(1.0)
+                * 0.35
+                * (std::f32::consts::PI * e).sin();
         self.pose = Pose {
             target: from.target.lerp(to.target, e),
             yaw: from.yaw + (to.yaw - from.yaw) * e,
@@ -195,7 +205,12 @@ impl Camera {
     /// Pose looking at the box centre from (yaw, pitch), as close as possible while every corner
     /// stays within `fill` of the viewport (in NDC, 1.0 = edge).
     pub fn frame_box(&self, b: &Aabb, yaw: f32, pitch: f32, fill: f32) -> Pose {
-        let mut pose = Pose { target: b.center(), yaw, pitch, dist: 1.0 };
+        let mut pose = Pose {
+            target: b.center(),
+            yaw,
+            pitch,
+            dist: 1.0,
+        };
         let fits = |dist: f32| -> bool {
             let mut cam = self.clone();
             cam.flight = None;
@@ -235,7 +250,10 @@ mod tests {
 
     #[test]
     fn ray_through_center_hits_target() {
-        let c = Camera { aspect: 1.0, ..Default::default() };
+        let c = Camera {
+            aspect: 1.0,
+            ..Default::default()
+        };
         let (o, d) = c.ray(50.0, 50.0, 100.0, 100.0);
         let to_target = (c.pose.target - o).normalize();
         assert!(d.dot(to_target) > 0.9999);
@@ -244,7 +262,12 @@ mod tests {
     #[test]
     fn flight_ends_at_destination() {
         let mut c = Camera::default();
-        let to = Pose { target: Vec3::new(3.0, 1.0, -2.0), yaw: -2.9, pitch: 0.3, dist: 2.0 };
+        let to = Pose {
+            target: Vec3::new(3.0, 1.0, -2.0),
+            yaw: -2.9,
+            pitch: 0.3,
+            dist: 2.0,
+        };
         c.fly_to(to, 0.0, 800.0);
         assert!(c.update(400.0));
         assert!(c.flying());
@@ -256,7 +279,12 @@ mod tests {
 
     #[test]
     fn pitch_is_clamped_above_floor() {
-        let mut p = Pose { target: Vec3::new(0.0, -3.0, 0.0), yaw: 0.0, pitch: -1.0, dist: 1.0 };
+        let mut p = Pose {
+            target: Vec3::new(0.0, -3.0, 0.0),
+            yaw: 0.0,
+            pitch: -1.0,
+            dist: 1.0,
+        };
         Camera::clamp(&mut p, 50.0);
         assert!(p.pitch >= MIN_PITCH && p.target.y >= 0.0 && p.eye().y > 0.0);
     }

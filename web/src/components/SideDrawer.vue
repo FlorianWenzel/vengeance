@@ -1,12 +1,15 @@
 <script setup lang="ts">
-import { ref, toRef, useId } from 'vue'
-import { useFocusTrap } from '../lib/useFocusTrap'
+import { ref, toRef, useId } from "vue";
+import { useFocusTrap } from "../lib/useFocusTrap";
 
-const props = withDefaults(defineProps<{ open: boolean; label: string; testid?: string }>(), {})
-const emit = defineEmits<{ close: [] }>()
-const panel = ref<HTMLElement | null>(null)
-const labelId = useId()
-useFocusTrap(toRef(props, 'open'), panel, () => emit('close'))
+const props = withDefaults(
+  defineProps<{ open: boolean; label: string; testid?: string }>(),
+  {},
+);
+const emit = defineEmits<{ close: [] }>();
+const panel = ref<HTMLElement | null>(null);
+const labelId = useId();
+useFocusTrap(toRef(props, "open"), panel, () => emit("close"));
 </script>
 
 <template>

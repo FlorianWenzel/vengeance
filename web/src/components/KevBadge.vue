@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import AppIcon from './AppIcon.vue'
-withDefaults(defineProps<{ compact?: boolean }>(), { compact: false })
+import AppIcon from "./AppIcon.vue";
+withDefaults(defineProps<{ compact?: boolean }>(), { compact: false });
 </script>
 
 <template>
@@ -9,6 +9,9 @@ withDefaults(defineProps<{ compact?: boolean }>(), { compact: false })
     title="Listed in the CISA Known Exploited Vulnerabilities catalog"
   >
     <AppIcon name="flame" :size="11" />
-    <span>KEV</span><span v-if="!compact" class="font-sans font-normal tracking-normal">exploited</span>
+    <span>KEV</span
+    ><span v-if="!compact" class="font-sans font-normal tracking-normal"
+      >exploited</span
+    >
   </span>
 </template>

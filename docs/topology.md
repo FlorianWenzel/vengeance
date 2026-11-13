@@ -14,13 +14,32 @@ reveals more detail. The renderer is Rust compiled to WebAssembly drawing with W
 {
   "cluster": "slowbloom",
   "nodes": [
-    { "name": "slowbloom", "host": "host:slowbloom-node", "cpu": "4", "memory": "7936204Ki",
-      "os": "Ubuntu 24.04.5 LTS", "kernel": "6.8.0-149-generic", "kubelet": "v1.37.2+k3s1" }
+    {
+      "name": "slowbloom",
+      "host": "host:slowbloom-node",
+      "cpu": "4",
+      "memory": "7936204Ki",
+      "os": "Ubuntu 24.04.5 LTS",
+      "kernel": "6.8.0-149-generic",
+      "kubelet": "v1.37.2+k3s1"
+    }
   ],
   "workloads": [
-    { "namespace": "slowbloom", "name": "api", "kind": "Deployment", "node": "slowbloom",
-      "ready": 1, "desired": 1,
-      "containers": [ { "name": "api", "image": "registry.flos.life/petal-api:f489ff4", "imageId": "sha256:…" } ] }
+    {
+      "namespace": "slowbloom",
+      "name": "api",
+      "kind": "Deployment",
+      "node": "slowbloom",
+      "ready": 1,
+      "desired": 1,
+      "containers": [
+        {
+          "name": "api",
+          "image": "registry.flos.life/petal-api:f489ff4",
+          "imageId": "sha256:…"
+        }
+      ]
+    }
   ]
 }
 ```
@@ -35,59 +54,59 @@ and a `status`. Image references are already resolved to Vengeance assets.
 
 ```ts
 type Status = {
-  level: 'p1' | 'p2' | 'p3' | 'p4' | 'ok' | 'unknown'  // worst open priority; ok = nothing open; unknown = never scanned
-  open: { p1: number; p2: number; p3: number; p4: number; total: number }
-  stale: boolean        // an expected scan is missing or too old
-}
+  level: "p1" | "p2" | "p3" | "p4" | "ok" | "unknown"; // worst open priority; ok = nothing open; unknown = never scanned
+  open: { p1: number; p2: number; p3: number; p4: number; total: number };
+  stale: boolean; // an expected scan is missing or too old
+};
 
 type Scene = {
-  generatedAt: string
-  hosts: Host[]
-  external: External[]  // assets not running on a host: repositories, domains, registries
-}
+  generatedAt: string;
+  hosts: Host[];
+  external: External[]; // assets not running on a host: repositories, domains, registries
+};
 
 type Host = {
-  id: string            // "host:<assetId>" or "node:<name>" when no asset matches
-  assetId: number | null
-  name: string          // display name
-  subtitle: string      // e.g. "Ubuntu 24.04.5 LTS · 4 CPU · 7.6 GiB · k3s v1.37.2"
-  status: Status        // the host's own findings (OS packages, binaries)
-  cluster: string | null
-  groups: Group[]       // namespaces, sorted by name
-}
+  id: string; // "host:<assetId>" or "node:<name>" when no asset matches
+  assetId: number | null;
+  name: string; // display name
+  subtitle: string; // e.g. "Ubuntu 24.04.5 LTS · 4 CPU · 7.6 GiB · k3s v1.37.2"
+  status: Status; // the host's own findings (OS packages, binaries)
+  cluster: string | null;
+  groups: Group[]; // namespaces, sorted by name
+};
 
 type Group = {
-  id: string            // "ns:<cluster>/<namespace>"
-  name: string          // namespace
-  status: Status        // worst of its workloads' images
-  workloads: Workload[]
-}
+  id: string; // "ns:<cluster>/<namespace>"
+  name: string; // namespace
+  status: Status; // worst of its workloads' images
+  workloads: Workload[];
+};
 
 type Workload = {
-  id: string            // "wl:<cluster>/<namespace>/<kind>/<name>"
-  name: string
-  kind: string          // Deployment, StatefulSet, DaemonSet, Job, Pod
-  ready: number
-  desired: number
-  status: Status        // worst of its images
-  images: Image[]
-}
+  id: string; // "wl:<cluster>/<namespace>/<kind>/<name>"
+  name: string;
+  kind: string; // Deployment, StatefulSet, DaemonSet, Job, Pod
+  ready: number;
+  desired: number;
+  status: Status; // worst of its images
+  images: Image[];
+};
 
 type Image = {
-  id: string            // "img:<assetId>" or "img:<image ref>" if unknown to Vengeance
-  assetId: number | null
-  name: string          // short name, e.g. "petal-api"
-  ref: string           // full image reference as running
-  status: Status
-}
+  id: string; // "img:<assetId>" or "img:<image ref>" if unknown to Vengeance
+  assetId: number | null;
+  name: string; // short name, e.g. "petal-api"
+  ref: string; // full image reference as running
+  status: Status;
+};
 
 type External = {
-  id: string            // "asset:<assetId>"
-  assetId: number
-  kind: 'repository' | 'domain' | 'registry' | 'image' | 'host' | 'cluster'
-  name: string
-  status: Status
-}
+  id: string; // "asset:<assetId>"
+  assetId: number;
+  kind: "repository" | "domain" | "registry" | "image" | "host" | "cluster";
+  name: string;
+  status: Status;
+};
 ```
 
 ## 3. Renderer API (Rust → wasm-bindgen → JS)
@@ -96,21 +115,21 @@ Package `vengeance_blueprint`, built with `wasm-bindgen --target web` into `web/
 
 ```ts
 class Blueprint {
-  constructor(canvas: HTMLCanvasElement)          // creates a WebGL2 context; throws if unavailable
-  set_scene(sceneJson: string): void              // (re)build geometry; keeps camera if ids persist
-  resize(cssWidth: number, cssHeight: number, devicePixelRatio: number): void
-  frame(timeMs: number): void                     // draw one frame (JS drives requestAnimationFrame)
-  pointer_down(x: number, y: number, button: number): void   // CSS pixels relative to canvas
-  pointer_move(x: number, y: number): void
-  pointer_up(x: number, y: number, button: number): void
-  wheel(deltaY: number, x: number, y: number): void
-  key(code: string): void                         // "Escape" zooms out one level, arrows orbit
-  focus(id: string): void                         // fly the camera to an element
-  reset_view(): void
-  hovered(): string | undefined                   // id under the pointer
-  selected(): string | undefined                  // id last clicked (a click is down+up without a drag)
-  labels(): string                                // JSON: [{ id, text, sub, x, y, depth, level, kind }] for HTML overlay
-  free(): void
+  constructor(canvas: HTMLCanvasElement); // creates a WebGL2 context; throws if unavailable
+  set_scene(sceneJson: string): void; // (re)build geometry; keeps camera if ids persist
+  resize(cssWidth: number, cssHeight: number, devicePixelRatio: number): void;
+  frame(timeMs: number): void; // draw one frame (JS drives requestAnimationFrame)
+  pointer_down(x: number, y: number, button: number): void; // CSS pixels relative to canvas
+  pointer_move(x: number, y: number): void;
+  pointer_up(x: number, y: number, button: number): void;
+  wheel(deltaY: number, x: number, y: number): void;
+  key(code: string): void; // "Escape" zooms out one level, arrows orbit
+  focus(id: string): void; // fly the camera to an element
+  reset_view(): void;
+  hovered(): string | undefined; // id under the pointer
+  selected(): string | undefined; // id last clicked (a click is down+up without a drag)
+  labels(): string; // JSON: [{ id, text, sub, x, y, depth, level, kind }] for HTML overlay
+  free(): void;
 }
 ```
 
@@ -158,24 +177,24 @@ minimap(): string                        // JSON: { player: {x, z, heading}, bou
 Walk mode is a noir city at night. Every object stands for something real and behaves like it;
 there is no decoration that doesn't carry meaning. Orbit mode stays the blueprint.
 
-| Real thing | In the city |
-|---|---|
-| cluster | a district (one street grid per cluster) |
-| host / server | a building on a city block; building height = number of apps |
-| app (namespace) | one floor of that building, its name painted on the facade |
-| workload | a window/apartment on that floor; window lit = ready, dark = not ready (`ready < desired` → some panes dark) |
-| image | the silhouette/furniture behind the window (one per image) |
-| domain | a street door with a neon address sign at the base of the building whose app serves it (`group.domains`); unmatched domains are neon signs on a plain door in the square |
-| repository | a book on the shelves of the public library (a building on the square); spine colour = status |
-| image in the inventory | a shipping crate in the harbour warehouse (`scene.images`), running images are stamped, idle ones dusty |
-| scan source | a searchlight on a rooftop sweeping the sky; a stale source's searchlight is off |
-| P1 open | fire and smoke from the window (or the book/crate) |
-| P2 open | broken window pane / torn book / dented crate |
-| P3 / P4 | cracks and grime on the facade, scaled by count |
-| misconfiguration | a window or the street door left open (`workload.misconfig > 0`) |
-| leaked secret | a key left in the lock of the door (`status.kinds.secret > 0`) |
-| stale / never scanned | the street lamps in front of the building are out, the block is dark |
-| clean | warm light, intact glass, lamps on |
+| Real thing             | In the city                                                                                                                                                              |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| cluster                | a district (one street grid per cluster)                                                                                                                                 |
+| host / server          | a building on a city block; building height = number of apps                                                                                                             |
+| app (namespace)        | one floor of that building, its name painted on the facade                                                                                                               |
+| workload               | a window/apartment on that floor; window lit = ready, dark = not ready (`ready < desired` → some panes dark)                                                             |
+| image                  | the silhouette/furniture behind the window (one per image)                                                                                                               |
+| domain                 | a street door with a neon address sign at the base of the building whose app serves it (`group.domains`); unmatched domains are neon signs on a plain door in the square |
+| repository             | a book on the shelves of the public library (a building on the square); spine colour = status                                                                            |
+| image in the inventory | a shipping crate in the harbour warehouse (`scene.images`), running images are stamped, idle ones dusty                                                                  |
+| scan source            | a searchlight on a rooftop sweeping the sky; a stale source's searchlight is off                                                                                         |
+| P1 open                | fire and smoke from the window (or the book/crate)                                                                                                                       |
+| P2 open                | broken window pane / torn book / dented crate                                                                                                                            |
+| P3 / P4                | cracks and grime on the facade, scaled by count                                                                                                                          |
+| misconfiguration       | a window or the street door left open (`workload.misconfig > 0`)                                                                                                         |
+| leaked secret          | a key left in the lock of the door (`status.kinds.secret > 0`)                                                                                                           |
+| stale / never scanned  | the street lamps in front of the building are out, the block is dark                                                                                                     |
+| clean                  | warm light, intact glass, lamps on                                                                                                                                       |
 
 The HUD aim readout names the real thing and the metaphor's meaning ("api · slowbloom — window broken:
 3 P2 findings"), so nobody has to learn the mapping first.

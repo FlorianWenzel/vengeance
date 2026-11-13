@@ -2,7 +2,12 @@
   <!-- Faint film grain over the whole app. Inline SVG (no data: URIs) to stay CSP-friendly. -->
   <svg class="grain" aria-hidden="true" focusable="false">
     <filter id="vg-grain">
-      <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" />
+      <feTurbulence
+        type="fractalNoise"
+        baseFrequency="0.85"
+        numOctaves="2"
+        stitchTiles="stitch"
+      />
       <feColorMatrix type="saturate" values="0" />
     </filter>
     <rect width="100%" height="100%" filter="url(#vg-grain)" />

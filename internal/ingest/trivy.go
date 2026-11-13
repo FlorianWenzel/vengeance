@@ -30,27 +30,27 @@ type trivyResource struct {
 }
 
 type trivyResult struct {
-	Target            string          `json:"Target"`
-	Class             string          `json:"Class"`
-	Type              string          `json:"Type"`
-	Vulnerabilities   []trivyVuln     `json:"Vulnerabilities"`
-	Secrets           []trivySecret   `json:"Secrets"`
-	Misconfigurations []trivyMisconf  `json:"Misconfigurations"`
+	Target            string         `json:"Target"`
+	Class             string         `json:"Class"`
+	Type              string         `json:"Type"`
+	Vulnerabilities   []trivyVuln    `json:"Vulnerabilities"`
+	Secrets           []trivySecret  `json:"Secrets"`
+	Misconfigurations []trivyMisconf `json:"Misconfigurations"`
 }
 
 type trivyVuln struct {
-	VulnerabilityID  string                       `json:"VulnerabilityID"`
-	PkgName          string                       `json:"PkgName"`
-	InstalledVersion string                       `json:"InstalledVersion"`
-	FixedVersion     string                       `json:"FixedVersion"`
-	SeveritySource   string                       `json:"SeveritySource"`
-	PrimaryURL       string                       `json:"PrimaryURL"`
-	Title            string                       `json:"Title"`
-	Description      string                       `json:"Description"`
-	Severity         string                       `json:"Severity"`
-	CVSS             map[string]map[string]any    `json:"CVSS"`
-	References       []string                     `json:"References"`
-	PublishedDate    *time.Time                   `json:"PublishedDate"`
+	VulnerabilityID  string                    `json:"VulnerabilityID"`
+	PkgName          string                    `json:"PkgName"`
+	InstalledVersion string                    `json:"InstalledVersion"`
+	FixedVersion     string                    `json:"FixedVersion"`
+	SeveritySource   string                    `json:"SeveritySource"`
+	PrimaryURL       string                    `json:"PrimaryURL"`
+	Title            string                    `json:"Title"`
+	Description      string                    `json:"Description"`
+	Severity         string                    `json:"Severity"`
+	CVSS             map[string]map[string]any `json:"CVSS"`
+	References       []string                  `json:"References"`
+	PublishedDate    *time.Time                `json:"PublishedDate"`
 }
 
 type trivySecret struct {

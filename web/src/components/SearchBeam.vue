@@ -1,11 +1,17 @@
 <script setup lang="ts">
 // Decorative diagonal light cone. Purely visual; hidden from assistive tech.
-withDefaults(defineProps<{ angle?: number; intensity?: number }>(), { angle: -24, intensity: 1 })
+withDefaults(defineProps<{ angle?: number; intensity?: number }>(), {
+  angle: -24,
+  intensity: 1,
+});
 </script>
 
 <template>
   <div class="beam-root" aria-hidden="true">
-    <div class="beam-cone" :style="{ transform: `rotate(${angle}deg)`, opacity: 0.16 * intensity }" />
+    <div
+      class="beam-cone"
+      :style="{ transform: `rotate(${angle}deg)`, opacity: 0.16 * intensity }"
+    />
     <div class="beam-source" :style="{ opacity: 0.5 * intensity }" />
   </div>
 </template>
@@ -26,7 +32,12 @@ withDefaults(defineProps<{ angle?: number; intensity?: number }>(), { angle: -24
   margin-left: -35%;
   transform-origin: 50% 100%;
   clip-path: polygon(46% 100%, 54% 100%, 100% 0, 0 0);
-  background: linear-gradient(to top, var(--color-beam) 0%, color-mix(in oklab, var(--color-beam) 35%, transparent) 45%, transparent 85%);
+  background: linear-gradient(
+    to top,
+    var(--color-beam) 0%,
+    color-mix(in oklab, var(--color-beam) 35%, transparent) 45%,
+    transparent 85%
+  );
   filter: blur(18px);
   animation: sweep 14s ease-in-out infinite alternate;
 }

@@ -3,7 +3,10 @@
 
 use glam::Mat4;
 use wasm_bindgen::{JsCast, JsValue};
-use web_sys::{HtmlCanvasElement, WebGl2RenderingContext as GL, WebGlBuffer, WebGlProgram, WebGlShader, WebGlUniformLocation, WebGlVertexArrayObject};
+use web_sys::{
+    HtmlCanvasElement, WebGl2RenderingContext as GL, WebGlBuffer, WebGlProgram, WebGlShader,
+    WebGlUniformLocation, WebGlVertexArrayObject,
+};
 
 use crate::engine::Engine;
 use crate::geo::{FACE_STRIDE, LED_STRIDE, LINE_STRIDE};
@@ -444,13 +447,35 @@ struct Prog {
 
 impl Prog {
     fn loc(&self, name: &str) -> Option<&WebGlUniformLocation> {
-        self.u.iter().find(|(n, _)| *n == name).and_then(|(_, l)| l.as_ref())
+        self.u
+            .iter()
+            .find(|(n, _)| *n == name)
+            .and_then(|(_, l)| l.as_ref())
     }
 }
 
 const UNIFORMS: [&str; 21] = [
-    "uVP", "uEye", "uViewport", "uDpr", "uTime", "uMotion", "uFog", "uHidden", "uAlpha", "uDepthOnly", "uProjY", "uInvVP", "uScene", "uWalk", "uFogColor",
-    "uMoon", "uLightPos", "uLightCol", "uLightCount", "uWaterX", "uLinePass",
+    "uVP",
+    "uEye",
+    "uViewport",
+    "uDpr",
+    "uTime",
+    "uMotion",
+    "uFog",
+    "uHidden",
+    "uAlpha",
+    "uDepthOnly",
+    "uProjY",
+    "uInvVP",
+    "uScene",
+    "uWalk",
+    "uFogColor",
+    "uMoon",
+    "uLightPos",
+    "uLightCol",
+    "uLightCount",
+    "uWaterX",
+    "uLinePass",
 ];
 
 pub const MOON: [f32; 3] = [0.70, 0.36, -0.62];
@@ -488,7 +513,11 @@ fn compile(gl: &GL, kind: u32, src: &str) -> Result<WebGlShader, String> {
     let s = gl.create_shader(kind).ok_or("cannot create shader")?;
     gl.shader_source(&s, src);
     gl.compile_shader(&s);
-    if gl.get_shader_parameter(&s, GL::COMPILE_STATUS).as_bool().unwrap_or(false) {
+    if gl
+        .get_shader_parameter(&s, GL::COMPILE_STATUS)
+        .as_bool()
+        .unwrap_or(false)
+    {
         Ok(s)
     } else {
         Err(gl.get_shader_info_log(&s).unwrap_or_default())
@@ -503,10 +532,17 @@ fn program(gl: &GL, vs: &str, fs: &str) -> Result<Prog, String> {
     gl.attach_shader(&p, &v);
     gl.attach_shader(&p, &f);
     gl.link_program(&p);
-    if !gl.get_program_parameter(&p, GL::LINK_STATUS).as_bool().unwrap_or(false) {
+    if !gl
+        .get_program_parameter(&p, GL::LINK_STATUS)
+        .as_bool()
+        .unwrap_or(false)
+    {
         return Err(gl.get_program_info_log(&p).unwrap_or_default());
     }
-    let u = UNIFORMS.iter().map(|n| (*n, gl.get_uniform_location(&p, n))).collect();
+    let u = UNIFORMS
+        .iter()
+        .map(|n| (*n, gl.get_uniform_location(&p, n)))
+        .collect();
     Ok(Prog { p, u })
 }
 
@@ -520,7 +556,14 @@ fn upload(gl: &GL, buf: &WebGlBuffer, data: &[f32], usage: u32) {
 }
 
 /// Static per-vertex buffer + instance buffer with the given attribute layout (loc, size, offset in floats).
-fn batch(gl: &GL, mesh: &[f32], mesh_attrs: &[(u32, i32, i32)], mesh_stride: i32, inst_attrs: &[(u32, i32, i32)], inst_stride: usize) -> Result<Batch, String> {
+fn batch(
+    gl: &GL,
+    mesh: &[f32],
+    mesh_attrs: &[(u32, i32, i32)],
+    mesh_stride: i32,
+    inst_attrs: &[(u32, i32, i32)],
+    inst_stride: usize,
+) -> Result<Batch, String> {
     let vao = gl.create_vertex_array().ok_or("cannot create VAO")?;
     gl.bind_vertex_array(Some(&vao));
     let mbuf = gl.create_buffer().ok_or("cannot create buffer")?;
@@ -533,7 +576,14 @@ fn batch(gl: &GL, mesh: &[f32], mesh_attrs: &[(u32, i32, i32)], mesh_stride: i32
     gl.bind_buffer(GL::ARRAY_BUFFER, Some(&buf));
     for &(loc, size, off) in inst_attrs {
         gl.enable_vertex_attrib_array(loc);
-        gl.vertex_attrib_pointer_with_i32(loc, size, GL::FLOAT, false, (inst_stride * 4) as i32, off * 4);
+        gl.vertex_attrib_pointer_with_i32(
+            loc,
+            size,
+            GL::FLOAT,
+            false,
+            (inst_stride * 4) as i32,
+            off * 4,
+        );
         gl.vertex_attrib_divisor(loc, 1);
     }
     gl.bind_vertex_array(None);
@@ -543,12 +593,30 @@ fn batch(gl: &GL, mesh: &[f32], mesh_attrs: &[(u32, i32, i32)], mesh_stride: i32
 fn cube() -> Vec<f32> {
     // 6 faces × 2 triangles, position (0..1) + normal.
     let faces: [([f32; 3], [[f32; 3]; 4]); 6] = [
-        ([1., 0., 0.], [[1., 0., 0.], [1., 1., 0.], [1., 1., 1.], [1., 0., 1.]]),
-        ([-1., 0., 0.], [[0., 0., 1.], [0., 1., 1.], [0., 1., 0.], [0., 0., 0.]]),
-        ([0., 1., 0.], [[0., 1., 1.], [1., 1., 1.], [1., 1., 0.], [0., 1., 0.]]),
-        ([0., -1., 0.], [[0., 0., 0.], [1., 0., 0.], [1., 0., 1.], [0., 0., 1.]]),
-        ([0., 0., 1.], [[0., 0., 1.], [1., 0., 1.], [1., 1., 1.], [0., 1., 1.]]),
-        ([0., 0., -1.], [[1., 0., 0.], [0., 0., 0.], [0., 1., 0.], [1., 1., 0.]]),
+        (
+            [1., 0., 0.],
+            [[1., 0., 0.], [1., 1., 0.], [1., 1., 1.], [1., 0., 1.]],
+        ),
+        (
+            [-1., 0., 0.],
+            [[0., 0., 1.], [0., 1., 1.], [0., 1., 0.], [0., 0., 0.]],
+        ),
+        (
+            [0., 1., 0.],
+            [[0., 1., 1.], [1., 1., 1.], [1., 1., 0.], [0., 1., 0.]],
+        ),
+        (
+            [0., -1., 0.],
+            [[0., 0., 0.], [1., 0., 0.], [1., 0., 1.], [0., 0., 1.]],
+        ),
+        (
+            [0., 0., 1.],
+            [[0., 0., 1.], [1., 0., 1.], [1., 1., 1.], [0., 1., 1.]],
+        ),
+        (
+            [0., 0., -1.],
+            [[1., 0., 0.], [0., 0., 0.], [0., 1., 0.], [1., 1., 0.]],
+        ),
     ];
     let mut v = Vec::with_capacity(36 * 6);
     for (n, q) in faces {
@@ -588,9 +656,23 @@ impl Renderer {
         let lines = batch(&gl, &quad, &[(0, 2, 0)], 2, &line_attrs, LINE_STRIDE)?;
         let highlight = batch(&gl, &quad, &[(0, 2, 0)], 2, &line_attrs, LINE_STRIDE)?;
         let dynamic = batch(&gl, &quad, &[(0, 2, 0)], 2, &line_attrs, LINE_STRIDE)?;
-        let faces = batch(&gl, &cube(), &[(0, 3, 0), (1, 3, 3)], 6, &[(2, 3, 0), (3, 3, 3), (4, 4, 6), (5, 3, 10), (6, 3, 13)], FACE_STRIDE)?;
+        let faces = batch(
+            &gl,
+            &cube(),
+            &[(0, 3, 0), (1, 3, 3)],
+            6,
+            &[(2, 3, 0), (3, 3, 3), (4, 4, 6), (5, 3, 10), (6, 3, 13)],
+            FACE_STRIDE,
+        )?;
         let sq: [f32; 12] = [-1., -1., 1., -1., 1., 1., -1., -1., 1., 1., -1., 1.];
-        let leds = batch(&gl, &sq, &[(0, 2, 0)], 2, &[(1, 4, 0), (2, 4, 4), (3, 3, 8), (4, 4, 11), (5, 1, 15)], LED_STRIDE)?;
+        let leds = batch(
+            &gl,
+            &sq,
+            &[(0, 2, 0)],
+            2,
+            &[(1, 4, 0), (2, 4, 4), (3, 3, 8), (4, 4, 11), (5, 1, 15)],
+            LED_STRIDE,
+        )?;
 
         Ok(Renderer {
             gl,
@@ -636,7 +718,11 @@ impl Renderer {
         gl.uniform_matrix4fv_with_f32_array(p.loc("uVP"), false, vp);
         let eye = e.cam.eye();
         gl.uniform3f(p.loc("uEye"), eye.x, eye.y, eye.z);
-        gl.uniform2f(p.loc("uViewport"), self.canvas.width() as f32, self.canvas.height() as f32);
+        gl.uniform2f(
+            p.loc("uViewport"),
+            self.canvas.width() as f32,
+            self.canvas.height() as f32,
+        );
         gl.uniform1f(p.loc("uDpr"), e.dpr);
         gl.uniform1f(p.loc("uTime"), (e.now % 1.0e7) as f32);
         gl.uniform1f(p.loc("uMotion"), if e.reduced_motion { 0.0 } else { 1.0 });
@@ -685,7 +771,12 @@ impl Renderer {
         }
         if self.hl_version != e.highlight_version {
             self.hl_version = e.highlight_version;
-            upload(gl, &self.highlight.buf, &e.highlight.lines, GL::DYNAMIC_DRAW);
+            upload(
+                gl,
+                &self.highlight.buf,
+                &e.highlight.lines,
+                GL::DYNAMIC_DRAW,
+            );
             self.highlight.count = e.highlight.line_count() as i32;
         }
 
@@ -710,7 +801,11 @@ impl Renderer {
         self.common(&self.bg, e, &vp);
         let inv = vpm.inverse().to_cols_array();
         gl.uniform_matrix4fv_with_f32_array(self.bg.loc("uInvVP"), false, &inv);
-        let (c, r) = e.layout.bounds.map(|b| (b.center(), b.radius())).unwrap_or((glam::Vec3::ZERO, 3.0));
+        let (c, r) = e
+            .layout
+            .bounds
+            .map(|b| (b.center(), b.radius()))
+            .unwrap_or((glam::Vec3::ZERO, 3.0));
         gl.uniform4f(self.bg.loc("uScene"), c.x, c.z, r * 1.2, 0.0);
         if let Some(c) = e.layout.room.as_ref() {
             gl.uniform1f(self.bg.loc("uWaterX"), c.water_x);

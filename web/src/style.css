@@ -1,13 +1,15 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
 /*
  * Vengeance — night-city noir. One warm accent (sodium-lamp amber) on ink.
  * Priority colours are semantic and always ship with their "P1".."P4" label.
  */
 @theme static {
-  --font-display: 'Big Shoulders Display Variable', 'Oswald', 'Arial Narrow', sans-serif;
-  --font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono Variable', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  --font-display:
+    "Big Shoulders Display Variable", "Oswald", "Arial Narrow", sans-serif;
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono:
+    "JetBrains Mono Variable", ui-monospace, "SFMono-Regular", Menlo, monospace;
 
   --color-ink-950: #05070b;
   --color-ink-900: #090c12;
@@ -83,7 +85,7 @@
     font-family: var(--font-mono);
     font-variant-ligatures: none;
   }
-  input[type='date']::-webkit-calendar-picker-indicator {
+  input[type="date"]::-webkit-calendar-picker-indicator {
     filter: invert(0.75);
   }
   @media (prefers-reduced-motion: reduce) {
@@ -116,7 +118,11 @@
   .link {
     color: var(--color-beam);
     text-decoration: underline;
-    text-decoration-color: color-mix(in oklab, var(--color-beam) 40%, transparent);
+    text-decoration-color: color-mix(
+      in oklab,
+      var(--color-beam) 40%,
+      transparent
+    );
     text-underline-offset: 3px;
   }
   .link:hover {
@@ -174,7 +180,11 @@
   }
   .btn-danger {
     color: #ff8a99;
-    border-color: color-mix(in oklab, var(--color-p1) 45%, var(--color-ink-600));
+    border-color: color-mix(
+      in oklab,
+      var(--color-p1) 45%,
+      var(--color-ink-600)
+    );
     background: color-mix(in oklab, var(--color-p1) 10%, var(--color-ink-800));
   }
   .btn-danger:hover:not(:disabled) {
@@ -240,7 +250,7 @@
     position: relative;
   }
   .select-wrap::after {
-    content: '';
+    content: "";
     position: absolute;
     right: 0.7rem;
     top: 50%;
@@ -269,7 +279,7 @@
     border-color: var(--color-beam);
   }
   .check:checked::before {
-    content: '';
+    content: "";
     width: 0.5rem;
     height: 0.28rem;
     border-left: 2px solid var(--color-beam-ink);
@@ -277,7 +287,7 @@
     transform: translateY(-1px) rotate(-45deg);
   }
   .check:indeterminate::before {
-    content: '';
+    content: "";
     width: 0.5rem;
     height: 2px;
     background: var(--color-beam-ink);

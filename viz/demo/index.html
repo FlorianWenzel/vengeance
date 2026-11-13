@@ -7,148 +7,438 @@
   Walk mode: V toggles, click locks the pointer (mouse look), WASD/arrows, Shift runs, E / click selects.
 -->
 <html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Blueprint demo</title>
-<style>
-  :root { --ink: #cfe9ff; --dim: #6f8fb3; --amber: #ffb547; }
-  html, body { margin: 0; height: 100%; background: #07101e; color: var(--ink);
-    font: 12px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace; overflow: hidden; }
-  #wrap { position: absolute; inset: 0; }
-  canvas { width: 100%; height: 100%; display: block; outline: none; }
-  #labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
-  .lb { position: absolute; white-space: nowrap; text-shadow: 0 0 3px #07101e, 0 0 6px #07101e; }
-  .lb b { font-weight: 600; letter-spacing: .02em; }
-  .lb i { display: block; font-style: normal; color: var(--dim); font-size: 10.5px; }
-  .lb.above { transform: translate(-50%, -100%); text-align: center; }
-  .lb.right { transform: translate(0, -50%); }
-  .lb.inside { transform: translate(0, 2px); font-size: 10.5px; }
-  .lb.below { transform: translate(-50%, 6px); text-align: center; font-size: 10px; }
-  .lb.center { transform: translate(-50%, -50%); text-align: center; }
-  .lb.host b { font-size: 13px; }
-  .lb.sel b { color: var(--amber); }
-  .dot { display: inline-block; width: 7px; height: 7px; border-radius: 2px; margin-right: 5px; vertical-align: 0; }
-  #hud { position: absolute; left: 12px; bottom: 10px; color: var(--dim); }
-  #err { position: absolute; inset: 0; display: none; place-items: center; color: #ff8a3d; }
-  #mode { position: absolute; right: 12px; top: 10px; background: #0b1a2e; color: var(--ink); border: 1px solid #2a4a70;
-    font: inherit; padding: 4px 10px; cursor: pointer; }
-  #cross { position: absolute; left: 50%; top: 50%; width: 18px; height: 18px; margin: -9px 0 0 -9px; display: none; pointer-events: none; }
-  #cross::before, #cross::after { content: ''; position: absolute; background: #cfe9ffcc; }
-  #cross::before { left: 8px; top: 0; width: 2px; height: 18px; } #cross::after { top: 8px; left: 0; height: 2px; width: 18px; }
-  #cross.hit::before, #cross.hit::after { background: var(--amber); }
-  #mini { position: absolute; right: 12px; bottom: 12px; width: 200px; height: 200px; display: none;
-    background: #07101ecc; border: 1px solid #2a4a70; }
-  .walk #cross, .walk #mini { display: block; }
-  #aim { position: absolute; left: 50%; top: calc(50% + 22px); transform: translateX(-50%); display: none; max-width: 30rem;
-    background: #050a12d9; border: 1px solid #2a4a70; padding: 5px 10px; text-align: center; }
-  #aim b { color: var(--amber); font-weight: 600; } #aim i { display: block; font-style: normal; color: var(--ink); }
-  .walk .lb { color: #f1e6d0; text-shadow: 0 0 4px #000, 0 0 8px #000; }
-  .walk .lb.group b { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: #e9dcc0; }
-  .walk .lb.domain b { color: #fff; text-shadow: 0 0 6px #ff3d8b, 0 0 12px #ff3d8b; }
-</style>
-</head>
-<body>
-<div id="wrap">
-  <canvas id="c" tabindex="0"></canvas>
-  <div id="labels"></div>
-  <div id="hud"></div>
-  <div id="err"></div>
-  <button id="mode">walk</button>
-  <div id="cross"></div>
-  <div id="aim"></div>
-  <canvas id="mini" width="400" height="400"></canvas>
-</div>
-<script type="module">
-  import init, { Blueprint } from '../../web/src/viz/pkg/blueprint.js';
-  const colors = { p1: '#ff4d5e', p2: '#ff8a3d', p3: '#ffd166', p4: '#7da7d9', ok: '#3ddc97', unknown: '#5b6478' };
-  const q = new URLSearchParams(location.search);
-  const canvas = document.getElementById('c');
-  const labelsEl = document.getElementById('labels');
-  const aimEl = document.getElementById('aim');
-  const hud = document.getElementById('hud');
-  await init();
-  let bp;
-  try { bp = new Blueprint(canvas); } catch (e) {
-    const el = document.getElementById('err'); el.style.display = 'grid'; el.textContent = String(e.message || e); throw e;
-  }
-  window.bp = bp;
-  const scene = await (await fetch(q.get('scene') || '../fixtures/scene.json')).text();
-  const resize = () => { const r = canvas.getBoundingClientRect(); bp.resize(r.width, r.height, devicePixelRatio); };
-  resize();
-  new ResizeObserver(resize).observe(canvas);
-  bp.set_reduced_motion(q.get('reduced') === '1' || matchMedia('(prefers-reduced-motion: reduce)').matches);
-  bp.set_scene(scene);
-  if (q.get('mode') === 'walk') bp.set_mode('walk');
-  if (q.get('focus')) bp.focus(q.get('focus'));
-  const wrap = document.getElementById('wrap');
-  const modeBtn = document.getElementById('mode');
-  const syncMode = () => { const w = bp.mode() === 'walk'; wrap.classList.toggle('walk', w); modeBtn.textContent = w ? 'orbit' : 'walk'; };
-  const toggle = () => { bp.set_mode(bp.mode() === 'walk' ? 'orbit' : 'walk'); if (document.pointerLockElement) document.exitPointerLock(); syncMode(); };
-  modeBtn.addEventListener('click', toggle);
-  syncMode();
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Blueprint demo</title>
+    <style>
+      :root {
+        --ink: #cfe9ff;
+        --dim: #6f8fb3;
+        --amber: #ffb547;
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #07101e;
+        color: var(--ink);
+        font:
+          12px/1.3 ui-monospace,
+          SFMono-Regular,
+          Menlo,
+          monospace;
+        overflow: hidden;
+      }
+      #wrap {
+        position: absolute;
+        inset: 0;
+      }
+      canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+        outline: none;
+      }
+      #labels {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        overflow: hidden;
+      }
+      .lb {
+        position: absolute;
+        white-space: nowrap;
+        text-shadow:
+          0 0 3px #07101e,
+          0 0 6px #07101e;
+      }
+      .lb b {
+        font-weight: 600;
+        letter-spacing: 0.02em;
+      }
+      .lb i {
+        display: block;
+        font-style: normal;
+        color: var(--dim);
+        font-size: 10.5px;
+      }
+      .lb.above {
+        transform: translate(-50%, -100%);
+        text-align: center;
+      }
+      .lb.right {
+        transform: translate(0, -50%);
+      }
+      .lb.inside {
+        transform: translate(0, 2px);
+        font-size: 10.5px;
+      }
+      .lb.below {
+        transform: translate(-50%, 6px);
+        text-align: center;
+        font-size: 10px;
+      }
+      .lb.center {
+        transform: translate(-50%, -50%);
+        text-align: center;
+      }
+      .lb.host b {
+        font-size: 13px;
+      }
+      .lb.sel b {
+        color: var(--amber);
+      }
+      .dot {
+        display: inline-block;
+        width: 7px;
+        height: 7px;
+        border-radius: 2px;
+        margin-right: 5px;
+        vertical-align: 0;
+      }
+      #hud {
+        position: absolute;
+        left: 12px;
+        bottom: 10px;
+        color: var(--dim);
+      }
+      #err {
+        position: absolute;
+        inset: 0;
+        display: none;
+        place-items: center;
+        color: #ff8a3d;
+      }
+      #mode {
+        position: absolute;
+        right: 12px;
+        top: 10px;
+        background: #0b1a2e;
+        color: var(--ink);
+        border: 1px solid #2a4a70;
+        font: inherit;
+        padding: 4px 10px;
+        cursor: pointer;
+      }
+      #cross {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 18px;
+        height: 18px;
+        margin: -9px 0 0 -9px;
+        display: none;
+        pointer-events: none;
+      }
+      #cross::before,
+      #cross::after {
+        content: "";
+        position: absolute;
+        background: #cfe9ffcc;
+      }
+      #cross::before {
+        left: 8px;
+        top: 0;
+        width: 2px;
+        height: 18px;
+      }
+      #cross::after {
+        top: 8px;
+        left: 0;
+        height: 2px;
+        width: 18px;
+      }
+      #cross.hit::before,
+      #cross.hit::after {
+        background: var(--amber);
+      }
+      #mini {
+        position: absolute;
+        right: 12px;
+        bottom: 12px;
+        width: 200px;
+        height: 200px;
+        display: none;
+        background: #07101ecc;
+        border: 1px solid #2a4a70;
+      }
+      .walk #cross,
+      .walk #mini {
+        display: block;
+      }
+      #aim {
+        position: absolute;
+        left: 50%;
+        top: calc(50% + 22px);
+        transform: translateX(-50%);
+        display: none;
+        max-width: 30rem;
+        background: #050a12d9;
+        border: 1px solid #2a4a70;
+        padding: 5px 10px;
+        text-align: center;
+      }
+      #aim b {
+        color: var(--amber);
+        font-weight: 600;
+      }
+      #aim i {
+        display: block;
+        font-style: normal;
+        color: var(--ink);
+      }
+      .walk .lb {
+        color: #f1e6d0;
+        text-shadow:
+          0 0 4px #000,
+          0 0 8px #000;
+      }
+      .walk .lb.group b {
+        font-size: 13px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #e9dcc0;
+      }
+      .walk .lb.domain b {
+        color: #fff;
+        text-shadow:
+          0 0 6px #ff3d8b,
+          0 0 12px #ff3d8b;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="wrap">
+      <canvas id="c" tabindex="0"></canvas>
+      <div id="labels"></div>
+      <div id="hud"></div>
+      <div id="err"></div>
+      <button id="mode">walk</button>
+      <div id="cross"></div>
+      <div id="aim"></div>
+      <canvas id="mini" width="400" height="400"></canvas>
+    </div>
+    <script type="module">
+      import init, { Blueprint } from "../../web/src/viz/pkg/blueprint.js";
+      const colors = {
+        p1: "#ff4d5e",
+        p2: "#ff8a3d",
+        p3: "#ffd166",
+        p4: "#7da7d9",
+        ok: "#3ddc97",
+        unknown: "#5b6478",
+      };
+      const q = new URLSearchParams(location.search);
+      const canvas = document.getElementById("c");
+      const labelsEl = document.getElementById("labels");
+      const aimEl = document.getElementById("aim");
+      const hud = document.getElementById("hud");
+      await init();
+      let bp;
+      try {
+        bp = new Blueprint(canvas);
+      } catch (e) {
+        const el = document.getElementById("err");
+        el.style.display = "grid";
+        el.textContent = String(e.message || e);
+        throw e;
+      }
+      window.bp = bp;
+      const scene = await (
+        await fetch(q.get("scene") || "../fixtures/scene.json")
+      ).text();
+      const resize = () => {
+        const r = canvas.getBoundingClientRect();
+        bp.resize(r.width, r.height, devicePixelRatio);
+      };
+      resize();
+      new ResizeObserver(resize).observe(canvas);
+      bp.set_reduced_motion(
+        q.get("reduced") === "1" ||
+          matchMedia("(prefers-reduced-motion: reduce)").matches,
+      );
+      bp.set_scene(scene);
+      if (q.get("mode") === "walk") bp.set_mode("walk");
+      if (q.get("focus")) bp.focus(q.get("focus"));
+      const wrap = document.getElementById("wrap");
+      const modeBtn = document.getElementById("mode");
+      const syncMode = () => {
+        const w = bp.mode() === "walk";
+        wrap.classList.toggle("walk", w);
+        modeBtn.textContent = w ? "orbit" : "walk";
+      };
+      const toggle = () => {
+        bp.set_mode(bp.mode() === "walk" ? "orbit" : "walk");
+        if (document.pointerLockElement) document.exitPointerLock();
+        syncMode();
+      };
+      modeBtn.addEventListener("click", toggle);
+      syncMode();
 
-  const pos = (e) => { const r = canvas.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
-  canvas.addEventListener('contextmenu', (e) => e.preventDefault());
-  const walking = () => bp.mode() === 'walk';
-  const locked = () => document.pointerLockElement === canvas;
-  canvas.addEventListener('pointerdown', (e) => {
-    canvas.focus();
-    if (walking()) {
-      if (locked()) { bp.interact(); return; }
-      if (!q.get('nolock')) { canvas.requestPointerLock?.(); return; }
-    }
-    canvas.setPointerCapture(e.pointerId); bp.pointer_down(...pos(e), e.button);
-  });
-  canvas.addEventListener('pointermove', (e) => { if (walking() && locked()) bp.look(e.movementX, e.movementY); else bp.pointer_move(...pos(e)); });
-  canvas.addEventListener('pointerup', (e) => { if (!(walking() && locked())) bp.pointer_up(...pos(e), e.button); });
-  window.addEventListener('keydown', (e) => { if (e.code === 'KeyV' && !e.repeat) toggle(); if (walking()) { if (!e.repeat) bp.key_down(e.code); if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault(); } });
-  window.addEventListener('keyup', (e) => bp.key_up(e.code));
-  window.addEventListener('blur', () => ['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','ShiftLeft','ShiftRight'].forEach((c) => bp.key_up(c)));
-  canvas.addEventListener('pointerleave', () => bp.pointer_move(-1, -1));
-  canvas.addEventListener('wheel', (e) => { e.preventDefault(); bp.wheel(e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY, ...pos(e)); }, { passive: false });
-  canvas.addEventListener('keydown', (e) => { if (walking()) return; if (e.code.startsWith('Arrow') || e.code === 'Escape') e.preventDefault(); bp.key(e.code); });
-  const mini = document.getElementById('mini');
-  const mctx = mini.getContext('2d');
-  const drawMini = () => {
-    const m = JSON.parse(bp.minimap());
-    const W = mini.width, H = mini.height, b = m.bounds;
-    const s = Math.min((W - 20) / (b.maxX - b.minX), (H - 20) / (b.maxZ - b.minZ));
-    const ox = (W - (b.maxX - b.minX) * s) / 2, oz = (H - (b.maxZ - b.minZ) * s) / 2;
-    const X = (x) => ox + (x - b.minX) * s, Z = (z) => oz + (z - b.minZ) * s;
-    mctx.clearRect(0, 0, W, H);
-    mctx.strokeStyle = '#3a6a9a'; mctx.lineWidth = 2; mctx.strokeRect(X(b.minX), Z(b.minZ), (b.maxX - b.minX) * s, (b.maxZ - b.minZ) * s);
-    for (const it of m.items) {
-      mctx.fillStyle = it.id ? colors[it.level] + '55' : '#2a4a7055'; mctx.strokeStyle = it.id ? colors[it.level] : '#3a6a9a';
-      mctx.fillRect(X(it.x - it.w / 2), Z(it.z - it.d / 2), it.w * s, it.d * s);
-      mctx.strokeRect(X(it.x - it.w / 2), Z(it.z - it.d / 2), it.w * s, it.d * s);
-    }
-    mctx.save(); mctx.translate(X(m.player.x), Z(m.player.z)); mctx.rotate(m.player.heading);
-    mctx.fillStyle = '#ffb547'; mctx.beginPath(); mctx.moveTo(0, -12); mctx.lineTo(8, 9); mctx.lineTo(0, 4); mctx.lineTo(-8, 9); mctx.closePath(); mctx.fill();
-    mctx.restore();
-  };
+      const pos = (e) => {
+        const r = canvas.getBoundingClientRect();
+        return [e.clientX - r.left, e.clientY - r.top];
+      };
+      canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+      const walking = () => bp.mode() === "walk";
+      const locked = () => document.pointerLockElement === canvas;
+      canvas.addEventListener("pointerdown", (e) => {
+        canvas.focus();
+        if (walking()) {
+          if (locked()) {
+            bp.interact();
+            return;
+          }
+          if (!q.get("nolock")) {
+            canvas.requestPointerLock?.();
+            return;
+          }
+        }
+        canvas.setPointerCapture(e.pointerId);
+        bp.pointer_down(...pos(e), e.button);
+      });
+      canvas.addEventListener("pointermove", (e) => {
+        if (walking() && locked()) bp.look(e.movementX, e.movementY);
+        else bp.pointer_move(...pos(e));
+      });
+      canvas.addEventListener("pointerup", (e) => {
+        if (!(walking() && locked())) bp.pointer_up(...pos(e), e.button);
+      });
+      window.addEventListener("keydown", (e) => {
+        if (e.code === "KeyV" && !e.repeat) toggle();
+        if (walking()) {
+          if (!e.repeat) bp.key_down(e.code);
+          if (e.code.startsWith("Arrow") || e.code === "Space")
+            e.preventDefault();
+        }
+      });
+      window.addEventListener("keyup", (e) => bp.key_up(e.code));
+      window.addEventListener("blur", () =>
+        [
+          "KeyW",
+          "KeyA",
+          "KeyS",
+          "KeyD",
+          "ArrowUp",
+          "ArrowDown",
+          "ArrowLeft",
+          "ArrowRight",
+          "ShiftLeft",
+          "ShiftRight",
+        ].forEach((c) => bp.key_up(c)),
+      );
+      canvas.addEventListener("pointerleave", () => bp.pointer_move(-1, -1));
+      canvas.addEventListener(
+        "wheel",
+        (e) => {
+          e.preventDefault();
+          bp.wheel(e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY, ...pos(e));
+        },
+        { passive: false },
+      );
+      canvas.addEventListener("keydown", (e) => {
+        if (walking()) return;
+        if (e.code.startsWith("Arrow") || e.code === "Escape")
+          e.preventDefault();
+        bp.key(e.code);
+      });
+      const mini = document.getElementById("mini");
+      const mctx = mini.getContext("2d");
+      const drawMini = () => {
+        const m = JSON.parse(bp.minimap());
+        const W = mini.width,
+          H = mini.height,
+          b = m.bounds;
+        const s = Math.min(
+          (W - 20) / (b.maxX - b.minX),
+          (H - 20) / (b.maxZ - b.minZ),
+        );
+        const ox = (W - (b.maxX - b.minX) * s) / 2,
+          oz = (H - (b.maxZ - b.minZ) * s) / 2;
+        const X = (x) => ox + (x - b.minX) * s,
+          Z = (z) => oz + (z - b.minZ) * s;
+        mctx.clearRect(0, 0, W, H);
+        mctx.strokeStyle = "#3a6a9a";
+        mctx.lineWidth = 2;
+        mctx.strokeRect(
+          X(b.minX),
+          Z(b.minZ),
+          (b.maxX - b.minX) * s,
+          (b.maxZ - b.minZ) * s,
+        );
+        for (const it of m.items) {
+          mctx.fillStyle = it.id ? colors[it.level] + "55" : "#2a4a7055";
+          mctx.strokeStyle = it.id ? colors[it.level] : "#3a6a9a";
+          mctx.fillRect(
+            X(it.x - it.w / 2),
+            Z(it.z - it.d / 2),
+            it.w * s,
+            it.d * s,
+          );
+          mctx.strokeRect(
+            X(it.x - it.w / 2),
+            Z(it.z - it.d / 2),
+            it.w * s,
+            it.d * s,
+          );
+        }
+        mctx.save();
+        mctx.translate(X(m.player.x), Z(m.player.z));
+        mctx.rotate(m.player.heading);
+        mctx.fillStyle = "#ffb547";
+        mctx.beginPath();
+        mctx.moveTo(0, -12);
+        mctx.lineTo(8, 9);
+        mctx.lineTo(0, 4);
+        mctx.lineTo(-8, 9);
+        mctx.closePath();
+        mctx.fill();
+        mctx.restore();
+      };
 
-  const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  let last = '';
-  const loop = (t) => {
-    bp.frame(t);
-    const json = bp.labels();
-    if (json !== last) {
-      last = json;
-      labelsEl.innerHTML = JSON.parse(json).map((l) =>
-        `<div class="lb ${l.anchor} ${l.kind}${l.selected ? ' sel' : ''}" style="left:${l.x}px;top:${l.y}px;opacity:${(1 - l.depth * 0.25).toFixed(2)}">` +
-        `<b><span class="dot" style="background:${colors[l.level]}"></span>${esc(l.text)}</b>` +
-        (l.sub && (l.selected || l.hovered) ? `<i>${esc(l.sub)}</i>` : '') + `</div>`).join('');
-    }
-    hud.textContent = `hover ${bp.hovered() ?? '-'}   selected ${bp.selected() ?? '-'}` + (walking() ? '   [walk: click to look, WASD, Shift run, E select, V orbit]' : '   [V walk]');
-    const aim = walking() && bp.aim_info ? JSON.parse(bp.aim_info()) : null;
-    aimEl.style.display = aim ? 'block' : 'none';
-    if (aim) aimEl.innerHTML = `<b>${esc(aim.title)}</b><i>${esc(aim.meaning)}</i>`;
-    if (walking()) { drawMini(); document.getElementById('cross').classList.toggle('hit', !!bp.hovered()); }
-    requestAnimationFrame(loop);
-  };
-  requestAnimationFrame(loop);
-  window.blueprintReady = true;
-</script>
-</body>
+      const esc = (s) =>
+        s.replace(
+          /[&<>"]/g,
+          (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c],
+        );
+      let last = "";
+      const loop = (t) => {
+        bp.frame(t);
+        const json = bp.labels();
+        if (json !== last) {
+          last = json;
+          labelsEl.innerHTML = JSON.parse(json)
+            .map(
+              (l) =>
+                `<div class="lb ${l.anchor} ${l.kind}${l.selected ? " sel" : ""}" style="left:${l.x}px;top:${l.y}px;opacity:${(1 - l.depth * 0.25).toFixed(2)}">` +
+                `<b><span class="dot" style="background:${colors[l.level]}"></span>${esc(l.text)}</b>` +
+                (l.sub && (l.selected || l.hovered)
+                  ? `<i>${esc(l.sub)}</i>`
+                  : "") +
+                `</div>`,
+            )
+            .join("");
+        }
+        hud.textContent =
+          `hover ${bp.hovered() ?? "-"}   selected ${bp.selected() ?? "-"}` +
+          (walking()
+            ? "   [walk: click to look, WASD, Shift run, E select, V orbit]"
+            : "   [V walk]");
+        const aim = walking() && bp.aim_info ? JSON.parse(bp.aim_info()) : null;
+        aimEl.style.display = aim ? "block" : "none";
+        if (aim)
+          aimEl.innerHTML = `<b>${esc(aim.title)}</b><i>${esc(aim.meaning)}</i>`;
+        if (walking()) {
+          drawMini();
+          document
+            .getElementById("cross")
+            .classList.toggle("hit", !!bp.hovered());
+        }
+        requestAnimationFrame(loop);
+      };
+      requestAnimationFrame(loop);
+      window.blueprintReady = true;
+    </script>
+  </body>
 </html>

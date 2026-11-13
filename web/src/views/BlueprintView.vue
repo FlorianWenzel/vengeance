@@ -1,468 +1,705 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
-import { RouterLink } from 'vue-router'
-import AppIcon from '../components/AppIcon.vue'
-import LoadingBlock from '../components/LoadingBlock.vue'
-import ErrorBlock from '../components/ErrorBlock.vue'
-import EmptyState from '../components/EmptyState.vue'
-import { api, errorMessage } from '../lib/api'
-import { ago, plural } from '../lib/format'
-import type { Scene, StatusLevel, TopoStatus } from '../lib/types'
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  shallowRef,
+  watch,
+} from "vue";
+import { RouterLink } from "vue-router";
+import AppIcon from "../components/AppIcon.vue";
+import LoadingBlock from "../components/LoadingBlock.vue";
+import ErrorBlock from "../components/ErrorBlock.vue";
+import EmptyState from "../components/EmptyState.vue";
+import { api, errorMessage } from "../lib/api";
+import { ago, plural } from "../lib/format";
+import type { Scene, StatusLevel, TopoStatus } from "../lib/types";
 
 // The renderer is Rust → WASM (viz/), built into src/viz/pkg by scripts/build-viz.sh.
 // import.meta.glob keeps the web build working when it hasn't been built (dev without Rust).
-const vizModules = import.meta.glob('../viz/pkg/blueprint.js')
+const vizModules = import.meta.glob("../viz/pkg/blueprint.js");
 
 interface BlueprintApi {
-  set_scene(json: string): void
-  resize(w: number, h: number, dpr: number): void
-  frame(t: number): void
-  pointer_down(x: number, y: number, b: number): void
-  pointer_move(x: number, y: number): void
-  pointer_up(x: number, y: number, b: number): void
-  wheel(dy: number, x: number, y: number): void
-  key(code: string): void
-  focus(id: string): void
-  reset_view(): void
-  hovered(): string | undefined
-  selected(): string | undefined
-  labels(): string
-  set_reduced_motion(on: boolean): void
-  free(): void
-  set_mode?(mode: 'orbit' | 'walk'): void
-  key_down?(code: string): void
-  key_up?(code: string): void
-  look?(dx: number, dy: number): void
-  interact?(): void
-  minimap?(): string
-  aim_info?(): string
+  set_scene(json: string): void;
+  resize(w: number, h: number, dpr: number): void;
+  frame(t: number): void;
+  pointer_down(x: number, y: number, b: number): void;
+  pointer_move(x: number, y: number): void;
+  pointer_up(x: number, y: number, b: number): void;
+  wheel(dy: number, x: number, y: number): void;
+  key(code: string): void;
+  focus(id: string): void;
+  reset_view(): void;
+  hovered(): string | undefined;
+  selected(): string | undefined;
+  labels(): string;
+  set_reduced_motion(on: boolean): void;
+  free(): void;
+  set_mode?(mode: "orbit" | "walk"): void;
+  key_down?(code: string): void;
+  key_up?(code: string): void;
+  look?(dx: number, dy: number): void;
+  interact?(): void;
+  minimap?(): string;
+  aim_info?(): string;
 }
 interface Minimap {
-  player: { x: number; z: number; heading: number }
-  bounds: { minX: number; minZ: number; maxX: number; maxZ: number }
-  items: { id: string; kind: string; x: number; z: number; w: number; d: number; level?: string }[]
+  player: { x: number; z: number; heading: number };
+  bounds: { minX: number; minZ: number; maxX: number; maxZ: number };
+  items: {
+    id: string;
+    kind: string;
+    x: number;
+    z: number;
+    w: number;
+    d: number;
+    level?: string;
+  }[];
 }
 interface Label {
-  id: string
-  text: string
-  sub?: string
-  x: number
-  y: number
-  depth: number
-  level?: string
-  kind: string
-  anchor?: 'above' | 'right' | 'inside' | 'below' | 'center'
+  id: string;
+  text: string;
+  sub?: string;
+  x: number;
+  y: number;
+  depth: number;
+  level?: string;
+  kind: string;
+  anchor?: "above" | "right" | "inside" | "below" | "center";
 }
 
-const scene = shallowRef<Scene | null>(null)
-const loading = ref(true)
-const loadError = ref<string | null>(null)
-const vizError = ref<string | null>(null)
-const view = ref<'3d' | 'walk' | 'list'>(vizModules['../viz/pkg/blueprint.js'] ? '3d' : 'list')
-const canvas = ref<HTMLCanvasElement | null>(null)
-const stage = ref<HTMLDivElement | null>(null)
-const labels = ref<Label[]>([])
-const hoveredId = ref<string | undefined>()
-const selectedId = ref<string | undefined>()
-let bp: BlueprintApi | null = null
-let dismissed: string | undefined // a selection the user closed; the renderer still reports it
-let raf = 0
-let frameNo = 0
-let poll = 0
-let ro: ResizeObserver | null = null
-const walkSupported = ref(false)
-const aimInfo = ref<{ id: string; title: string; meaning: string } | null>(null)
-const showGuide = ref(false)
-const locked = ref(false)
-const minimapEl = ref<HTMLCanvasElement | null>(null)
-const finePointer = typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches
+const scene = shallowRef<Scene | null>(null);
+const loading = ref(true);
+const loadError = ref<string | null>(null);
+const vizError = ref<string | null>(null);
+const view = ref<"3d" | "walk" | "list">(
+  vizModules["../viz/pkg/blueprint.js"] ? "3d" : "list",
+);
+const canvas = ref<HTMLCanvasElement | null>(null);
+const stage = ref<HTMLDivElement | null>(null);
+const labels = ref<Label[]>([]);
+const hoveredId = ref<string | undefined>();
+const selectedId = ref<string | undefined>();
+let bp: BlueprintApi | null = null;
+let dismissed: string | undefined; // a selection the user closed; the renderer still reports it
+let raf = 0;
+let frameNo = 0;
+let poll = 0;
+let ro: ResizeObserver | null = null;
+const walkSupported = ref(false);
+const aimInfo = ref<{ id: string; title: string; meaning: string } | null>(
+  null,
+);
+const showGuide = ref(false);
+const locked = ref(false);
+const minimapEl = ref<HTMLCanvasElement | null>(null);
+const finePointer =
+  typeof window !== "undefined" && window.matchMedia("(pointer: fine)").matches;
 
 async function load() {
   try {
-    const s = await api.get<Scene>('/api/v1/topology')
-    scene.value = s
-    loadError.value = null
-    bp?.set_scene(JSON.stringify(s))
+    const s = await api.get<Scene>("/api/v1/topology");
+    scene.value = s;
+    loadError.value = null;
+    bp?.set_scene(JSON.stringify(s));
   } catch (e) {
-    loadError.value = errorMessage(e)
+    loadError.value = errorMessage(e);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
-const hasTopology = computed(() => (scene.value?.hosts ?? []).some((h) => h.groups.length > 0))
+const hasTopology = computed(() =>
+  (scene.value?.hosts ?? []).some((h) => h.groups.length > 0),
+);
 
 async function startViz() {
-  if (bp || !canvas.value || !scene.value) return
-  const loader = vizModules['../viz/pkg/blueprint.js']
+  if (bp || !canvas.value || !scene.value) return;
+  const loader = vizModules["../viz/pkg/blueprint.js"];
   if (!loader) {
-    vizError.value = 'The 3D renderer is not part of this build.'
-    view.value = 'list'
-    return
+    vizError.value = "The 3D renderer is not part of this build.";
+    view.value = "list";
+    return;
   }
   try {
-    const mod = (await loader()) as { default: () => Promise<unknown>; Blueprint: new (c: HTMLCanvasElement) => BlueprintApi }
-    await mod.default()
-    bp = new mod.Blueprint(canvas.value)
-    bp.set_reduced_motion(window.matchMedia('(prefers-reduced-motion: reduce)').matches)
-    walkSupported.value = finePointer && typeof bp.set_mode === 'function' && 'requestPointerLock' in canvas.value
-    bp.set_mode?.(view.value === 'walk' && walkSupported.value ? 'walk' : 'orbit')
-    sizeCanvas()
-    bp.set_scene(JSON.stringify(scene.value))
-    ro = new ResizeObserver(sizeCanvas)
-    if (stage.value) ro.observe(stage.value)
+    const mod = (await loader()) as {
+      default: () => Promise<unknown>;
+      Blueprint: new (c: HTMLCanvasElement) => BlueprintApi;
+    };
+    await mod.default();
+    bp = new mod.Blueprint(canvas.value);
+    bp.set_reduced_motion(
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    );
+    walkSupported.value =
+      finePointer &&
+      typeof bp.set_mode === "function" &&
+      "requestPointerLock" in canvas.value;
+    bp.set_mode?.(
+      view.value === "walk" && walkSupported.value ? "walk" : "orbit",
+    );
+    sizeCanvas();
+    bp.set_scene(JSON.stringify(scene.value));
+    ro = new ResizeObserver(sizeCanvas);
+    if (stage.value) ro.observe(stage.value);
     const loop = (t: number) => {
-      if (!bp) return
-      bp.frame(t)
+      if (!bp) return;
+      bp.frame(t);
       if (++frameNo % 2 === 0) {
         try {
-          labels.value = JSON.parse(bp.labels()) as Label[]
+          labels.value = JSON.parse(bp.labels()) as Label[];
         } catch {
-          labels.value = []
+          labels.value = [];
         }
-        hoveredId.value = bp.hovered()
-        const sel = bp.selected()
-        if (sel !== dismissed) dismissed = undefined
-        if (sel !== selectedId.value && sel !== dismissed) selectedId.value = sel
+        hoveredId.value = bp.hovered();
+        const sel = bp.selected();
+        if (sel !== dismissed) dismissed = undefined;
+        if (sel !== selectedId.value && sel !== dismissed)
+          selectedId.value = sel;
       }
-      if (view.value === 'walk' && frameNo % 6 === 0) drawMinimap()
-      if (view.value === 'walk' && frameNo % 2 === 0 && bp.aim_info) {
+      if (view.value === "walk" && frameNo % 6 === 0) drawMinimap();
+      if (view.value === "walk" && frameNo % 2 === 0 && bp.aim_info) {
         try {
-          const a = JSON.parse(bp.aim_info()) as { id: string; title: string; meaning: string } | null
-          aimInfo.value = a && a.id ? a : null
+          const a = JSON.parse(bp.aim_info()) as {
+            id: string;
+            title: string;
+            meaning: string;
+          } | null;
+          aimInfo.value = a && a.id ? a : null;
         } catch {
-          aimInfo.value = null
+          aimInfo.value = null;
         }
       }
-      raf = requestAnimationFrame(loop)
-    }
-    raf = requestAnimationFrame(loop)
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
   } catch (e) {
-    vizError.value = `3D view unavailable: ${errorMessage(e)}. Showing the list instead.`
-    view.value = 'list'
-    bp = null
+    vizError.value = `3D view unavailable: ${errorMessage(e)}. Showing the list instead.`;
+    view.value = "list";
+    bp = null;
   }
 }
 
 function stopViz() {
-  cancelAnimationFrame(raf)
-  ro?.disconnect()
-  ro = null
-  bp?.free()
-  bp = null
-  labels.value = []
+  cancelAnimationFrame(raf);
+  ro?.disconnect();
+  ro = null;
+  bp?.free();
+  bp = null;
+  labels.value = [];
 }
 
 function sizeCanvas() {
-  if (!bp || !stage.value) return
-  const r = stage.value.getBoundingClientRect()
-  bp.resize(r.width, r.height, window.devicePixelRatio || 1)
+  if (!bp || !stage.value) return;
+  const r = stage.value.getBoundingClientRect();
+  bp.resize(r.width, r.height, window.devicePixelRatio || 1);
 }
 
 function local(e: PointerEvent | WheelEvent) {
-  const r = canvas.value!.getBoundingClientRect()
-  return [e.clientX - r.left, e.clientY - r.top] as const
+  const r = canvas.value!.getBoundingClientRect();
+  return [e.clientX - r.left, e.clientY - r.top] as const;
 }
 function onDown(e: PointerEvent) {
-  if (view.value === 'walk') {
-    if (locked.value) bp?.interact?.()
-    else enterWalk()
-    return
+  if (view.value === "walk") {
+    if (locked.value) bp?.interact?.();
+    else enterWalk();
+    return;
   }
-  canvas.value?.setPointerCapture(e.pointerId)
-  const [x, y] = local(e)
-  bp?.pointer_down(x, y, e.button)
+  canvas.value?.setPointerCapture(e.pointerId);
+  const [x, y] = local(e);
+  bp?.pointer_down(x, y, e.button);
 }
 function onMove(e: PointerEvent) {
-  if (view.value === 'walk') return
-  const [x, y] = local(e)
-  bp?.pointer_move(x, y)
+  if (view.value === "walk") return;
+  const [x, y] = local(e);
+  bp?.pointer_move(x, y);
 }
 function onUp(e: PointerEvent) {
-  if (view.value === 'walk') return
-  const [x, y] = local(e)
-  bp?.pointer_up(x, y, e.button)
+  if (view.value === "walk") return;
+  const [x, y] = local(e);
+  bp?.pointer_up(x, y, e.button);
 }
 function onWheel(e: WheelEvent) {
-  if (view.value === 'walk') return
-  const [x, y] = local(e)
-  bp?.wheel(e.deltaY, x, y)
+  if (view.value === "walk") return;
+  const [x, y] = local(e);
+  bp?.wheel(e.deltaY, x, y);
 }
 function onKey(e: KeyboardEvent) {
-  if (view.value === 'walk') return
-  if (['Escape', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
-    e.preventDefault()
-    bp?.key(e.key)
+  if (view.value === "walk") return;
+  if (
+    ["Escape", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(
+      e.key,
+    )
+  ) {
+    e.preventDefault();
+    bp?.key(e.key);
   }
 }
 
 function focusId(id: string) {
-  dismissed = undefined
-  selectedId.value = id
-  if (view.value !== 'list') bp?.focus(id)
+  dismissed = undefined;
+  selectedId.value = id;
+  if (view.value !== "list") bp?.focus(id);
 }
 function closePanel() {
-  dismissed = bp?.selected() ?? selectedId.value
-  selectedId.value = undefined
+  dismissed = bp?.selected() ?? selectedId.value;
+  selectedId.value = undefined;
 }
 function resetView() {
-  selectedId.value = undefined
-  bp?.reset_view()
+  selectedId.value = undefined;
+  bp?.reset_view();
 }
 
 watch(view, async (v, old) => {
-  if (v === 'list') {
-    exitWalk()
-    stopViz()
-    return
+  if (v === "list") {
+    exitWalk();
+    stopViz();
+    return;
   }
-  await nextTick()
-  if (!bp) await startViz()
-  if (v === 'walk') bp?.set_mode?.('walk')
-  else if (old === 'walk') {
-    exitWalk()
-    bp?.set_mode?.('orbit')
+  await nextTick();
+  if (!bp) await startViz();
+  if (v === "walk") bp?.set_mode?.("walk");
+  else if (old === "walk") {
+    exitWalk();
+    bp?.set_mode?.("orbit");
   }
-})
+});
 
 // --- walk mode ---------------------------------------------------------------
-const WALK_KEYS = new Set(['KeyH', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ShiftLeft', 'ShiftRight', 'KeyE', 'Space'])
+const WALK_KEYS = new Set([
+  "KeyH",
+  "KeyW",
+  "KeyA",
+  "KeyS",
+  "KeyD",
+  "ArrowUp",
+  "ArrowDown",
+  "ArrowLeft",
+  "ArrowRight",
+  "ShiftLeft",
+  "ShiftRight",
+  "KeyE",
+  "Space",
+]);
 function enterWalk() {
-  canvas.value?.requestPointerLock()
+  canvas.value?.requestPointerLock();
 }
 function exitWalk() {
-  if (document.pointerLockElement) document.exitPointerLock()
+  if (document.pointerLockElement) document.exitPointerLock();
 }
 function onLockChange() {
-  locked.value = document.pointerLockElement === canvas.value
-  if (!locked.value) for (const k of WALK_KEYS) bp?.key_up?.(k) // release held keys
+  locked.value = document.pointerLockElement === canvas.value;
+  if (!locked.value) for (const k of WALK_KEYS) bp?.key_up?.(k); // release held keys
 }
 function onLookMove(e: MouseEvent) {
-  if (locked.value) bp?.look?.(e.movementX, e.movementY)
+  if (locked.value) bp?.look?.(e.movementX, e.movementY);
 }
 function onWalkKey(e: KeyboardEvent, down: boolean) {
-  if (view.value !== 'walk' || !locked.value || !WALK_KEYS.has(e.code)) return
-  e.preventDefault()
+  if (view.value !== "walk" || !locked.value || !WALK_KEYS.has(e.code)) return;
+  e.preventDefault();
   if (down) {
-    if (e.repeat) return
-    if (e.code === 'KeyE') bp?.interact?.()
-    else if (e.code === 'KeyH') showGuide.value = !showGuide.value
-    else bp?.key_down?.(e.code)
-  } else bp?.key_up?.(e.code)
+    if (e.repeat) return;
+    if (e.code === "KeyE") bp?.interact?.();
+    else if (e.code === "KeyH") showGuide.value = !showGuide.value;
+    else bp?.key_down?.(e.code);
+  } else bp?.key_up?.(e.code);
 }
-const onKeyDownWin = (e: KeyboardEvent) => onWalkKey(e, true)
-const onKeyUpWin = (e: KeyboardEvent) => onWalkKey(e, false)
+const onKeyDownWin = (e: KeyboardEvent) => onWalkKey(e, true);
+const onKeyUpWin = (e: KeyboardEvent) => onWalkKey(e, false);
 
 const CITY_GUIDE: [string, string][] = [
-  ['Building', 'a server, one floor per app'],
-  ['Window', 'a workload; dark panes = replicas not ready'],
-  ['Neon door', 'a domain, on the building that serves it'],
-  ['Library books', 'repositories'],
-  ['Harbour crates', 'container images; dusty = not running'],
-  ['Searchlight', 'a scan source; off = it went quiet'],
-  ['Fire and smoke', 'P1 findings'],
-  ['Broken glass', 'P2 findings'],
-  ['Cracks and grime', 'P3 and P4 findings'],
-  ['Open window or door', 'misconfiguration'],
-  ['Key in the lock', 'a leaked secret'],
-  ['Street lamps out', 'not scanned recently'],
-]
-const LEVEL_HEX: Record<StatusLevel, string> = { p1: '#ef4058', p2: '#f27a3a', p3: '#e6d34f', p4: '#7397c2', ok: '#5fb58d', unknown: '#5b6478' }
+  ["Building", "a server, one floor per app"],
+  ["Window", "a workload; dark panes = replicas not ready"],
+  ["Neon door", "a domain, on the building that serves it"],
+  ["Library books", "repositories"],
+  ["Harbour crates", "container images; dusty = not running"],
+  ["Searchlight", "a scan source; off = it went quiet"],
+  ["Fire and smoke", "P1 findings"],
+  ["Broken glass", "P2 findings"],
+  ["Cracks and grime", "P3 and P4 findings"],
+  ["Open window or door", "misconfiguration"],
+  ["Key in the lock", "a leaked secret"],
+  ["Street lamps out", "not scanned recently"],
+];
+const LEVEL_HEX: Record<StatusLevel, string> = {
+  p1: "#ef4058",
+  p2: "#f27a3a",
+  p3: "#e6d34f",
+  p4: "#7397c2",
+  ok: "#5fb58d",
+  unknown: "#5b6478",
+};
 function drawMinimap() {
-  const el = minimapEl.value
-  if (!el || !bp?.minimap) return
-  let m: Minimap
+  const el = minimapEl.value;
+  if (!el || !bp?.minimap) return;
+  let m: Minimap;
   try {
-    m = JSON.parse(bp.minimap()) as Minimap
+    m = JSON.parse(bp.minimap()) as Minimap;
   } catch {
-    return
+    return;
   }
-  const ctx = el.getContext('2d')
-  if (!ctx) return
-  const dpr = window.devicePixelRatio || 1
-  const W = el.clientWidth
-  const H = el.clientHeight
+  const ctx = el.getContext("2d");
+  if (!ctx) return;
+  const dpr = window.devicePixelRatio || 1;
+  const W = el.clientWidth;
+  const H = el.clientHeight;
   if (el.width !== Math.round(W * dpr)) {
-    el.width = Math.round(W * dpr)
-    el.height = Math.round(H * dpr)
+    el.width = Math.round(W * dpr);
+    el.height = Math.round(H * dpr);
   }
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-  ctx.clearRect(0, 0, W, H)
-  const bw = m.bounds.maxX - m.bounds.minX || 1
-  const bd = m.bounds.maxZ - m.bounds.minZ || 1
-  const sc = Math.min((W - 16) / bw, (H - 16) / bd)
-  const ox = (W - bw * sc) / 2
-  const oz = (H - bd * sc) / 2
-  const X = (x: number) => ox + (x - m.bounds.minX) * sc
-  const Z = (z: number) => oz + (z - m.bounds.minZ) * sc
-  ctx.lineWidth = 1
-  ctx.strokeStyle = 'rgba(120,190,255,0.45)'
-  ctx.strokeRect(X(m.bounds.minX), Z(m.bounds.minZ), bw * sc, bd * sc)
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+  const bw = m.bounds.maxX - m.bounds.minX || 1;
+  const bd = m.bounds.maxZ - m.bounds.minZ || 1;
+  const sc = Math.min((W - 16) / bw, (H - 16) / bd);
+  const ox = (W - bw * sc) / 2;
+  const oz = (H - bd * sc) / 2;
+  const X = (x: number) => ox + (x - m.bounds.minX) * sc;
+  const Z = (z: number) => oz + (z - m.bounds.minZ) * sc;
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = "rgba(120,190,255,0.45)";
+  ctx.strokeRect(X(m.bounds.minX), Z(m.bounds.minZ), bw * sc, bd * sc);
   for (const it of m.items) {
-    const x0 = X(it.x - it.w / 2)
-    const z0 = Z(it.z - it.d / 2)
-    ctx.fillStyle = 'rgba(80,150,220,0.18)'
-    ctx.fillRect(x0, z0, it.w * sc, it.d * sc)
-    ctx.strokeStyle = it.id === hoveredId.value || it.id === selectedId.value ? '#f2b04a' : 'rgba(150,210,255,0.8)'
-    ctx.strokeRect(x0, z0, it.w * sc, it.d * sc)
-    ctx.fillStyle = LEVEL_HEX[(it.level as StatusLevel) || 'unknown'] ?? LEVEL_HEX.unknown
-    ctx.fillRect(X(it.x) - 2, Z(it.z) - 2, 4, 4)
+    const x0 = X(it.x - it.w / 2);
+    const z0 = Z(it.z - it.d / 2);
+    ctx.fillStyle = "rgba(80,150,220,0.18)";
+    ctx.fillRect(x0, z0, it.w * sc, it.d * sc);
+    ctx.strokeStyle =
+      it.id === hoveredId.value || it.id === selectedId.value
+        ? "#f2b04a"
+        : "rgba(150,210,255,0.8)";
+    ctx.strokeRect(x0, z0, it.w * sc, it.d * sc);
+    ctx.fillStyle =
+      LEVEL_HEX[(it.level as StatusLevel) || "unknown"] ?? LEVEL_HEX.unknown;
+    ctx.fillRect(X(it.x) - 2, Z(it.z) - 2, 4, 4);
   }
-  ctx.save()
-  ctx.translate(X(m.player.x), Z(m.player.z))
-  ctx.rotate(m.player.heading)
-  ctx.fillStyle = '#f2b04a'
-  ctx.beginPath()
-  ctx.moveTo(0, -7)
-  ctx.lineTo(5, 5)
-  ctx.lineTo(0, 2)
-  ctx.lineTo(-5, 5)
-  ctx.closePath()
-  ctx.fill()
-  ctx.restore()
+  ctx.save();
+  ctx.translate(X(m.player.x), Z(m.player.z));
+  ctx.rotate(m.player.heading);
+  ctx.fillStyle = "#f2b04a";
+  ctx.beginPath();
+  ctx.moveTo(0, -7);
+  ctx.lineTo(5, 5);
+  ctx.lineTo(0, 2);
+  ctx.lineTo(-5, 5);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
 }
 
-const aimed = computed(() => (view.value === 'walk' && hoveredId.value ? nameOf(hoveredId.value) : null))
+const aimed = computed(() =>
+  view.value === "walk" && hoveredId.value ? nameOf(hoveredId.value) : null,
+);
 function nameOf(id: string): string | null {
-  const s = scene.value
-  if (!s) return null
+  const s = scene.value;
+  if (!s) return null;
   for (const h of s.hosts) {
-    if (h.id === id) return h.name
+    if (h.id === id) return h.name;
     for (const g of h.groups) {
-      if (g.id === id) return `${g.name} · ${h.name}`
+      if (g.id === id) return `${g.name} · ${h.name}`;
       for (const w of g.workloads) {
-        if (w.id === id) return `${w.name} · ${g.name}`
-        for (const i of w.images) if (i.id === id) return `${i.name} · ${w.name}`
+        if (w.id === id) return `${w.name} · ${g.name}`;
+        for (const i of w.images)
+          if (i.id === id) return `${i.name} · ${w.name}`;
       }
     }
   }
-  return s.external.find((x) => x.id === id)?.name ?? null
+  return s.external.find((x) => x.id === id)?.name ?? null;
 }
 
-
 onMounted(async () => {
-  document.addEventListener('pointerlockchange', onLockChange)
-  document.addEventListener('mousemove', onLookMove)
-  window.addEventListener('keydown', onKeyDownWin)
-  window.addEventListener('keyup', onKeyUpWin)
-  await load()
-  poll = window.setInterval(load, 60_000)
-  if (view.value !== 'list' && hasTopology.value) {
-    await nextTick()
-    startViz()
+  document.addEventListener("pointerlockchange", onLockChange);
+  document.addEventListener("mousemove", onLookMove);
+  window.addEventListener("keydown", onKeyDownWin);
+  window.addEventListener("keyup", onKeyUpWin);
+  await load();
+  poll = window.setInterval(load, 60_000);
+  if (view.value !== "list" && hasTopology.value) {
+    await nextTick();
+    startViz();
   }
-})
+});
 onBeforeUnmount(() => {
-  document.removeEventListener('pointerlockchange', onLockChange)
-  document.removeEventListener('mousemove', onLookMove)
-  window.removeEventListener('keydown', onKeyDownWin)
-  window.removeEventListener('keyup', onKeyUpWin)
-  exitWalk()
-  clearInterval(poll)
-  stopViz()
-})
+  document.removeEventListener("pointerlockchange", onLockChange);
+  document.removeEventListener("mousemove", onLookMove);
+  window.removeEventListener("keydown", onKeyDownWin);
+  window.removeEventListener("keyup", onKeyUpWin);
+  exitWalk();
+  clearInterval(poll);
+  stopViz();
+});
 
 // --- selection details -------------------------------------------------------
 type Found =
-  | { kind: 'host'; name: string; sub: string; status: TopoStatus; assetId: number | null; children: number }
-  | { kind: 'group'; name: string; sub: string; status: TopoStatus; workloads: { id: string; name: string; ready: number; desired: number; status: TopoStatus }[] }
-  | { kind: 'workload'; name: string; sub: string; status: TopoStatus; images: { id: string; name: string; ref: string; assetId: number | null; status: TopoStatus }[] }
-  | { kind: 'image'; name: string; sub: string; status: TopoStatus; assetId: number | null }
-  | { kind: 'external'; name: string; sub: string; status: TopoStatus; assetId: number }
+  | {
+      kind: "host";
+      name: string;
+      sub: string;
+      status: TopoStatus;
+      assetId: number | null;
+      children: number;
+    }
+  | {
+      kind: "group";
+      name: string;
+      sub: string;
+      status: TopoStatus;
+      workloads: {
+        id: string;
+        name: string;
+        ready: number;
+        desired: number;
+        status: TopoStatus;
+      }[];
+    }
+  | {
+      kind: "workload";
+      name: string;
+      sub: string;
+      status: TopoStatus;
+      images: {
+        id: string;
+        name: string;
+        ref: string;
+        assetId: number | null;
+        status: TopoStatus;
+      }[];
+    }
+  | {
+      kind: "image";
+      name: string;
+      sub: string;
+      status: TopoStatus;
+      assetId: number | null;
+    }
+  | {
+      kind: "external";
+      name: string;
+      sub: string;
+      status: TopoStatus;
+      assetId: number;
+    };
 
 const found = computed<Found | null>(() => {
-  const id = selectedId.value
-  const s = scene.value
-  if (!id || !s) return null
+  const id = selectedId.value;
+  const s = scene.value;
+  if (!id || !s) return null;
   for (const h of s.hosts) {
-    if (h.id === id) return { kind: 'host', name: h.name, sub: h.subtitle, status: h.status, assetId: h.assetId, children: h.groups.length }
+    if (h.id === id)
+      return {
+        kind: "host",
+        name: h.name,
+        sub: h.subtitle,
+        status: h.status,
+        assetId: h.assetId,
+        children: h.groups.length,
+      };
     for (const g of h.groups) {
-      if (g.id === id) return { kind: 'group', name: g.name, sub: `namespace on ${h.name}`, status: g.status, workloads: g.workloads }
+      if (g.id === id)
+        return {
+          kind: "group",
+          name: g.name,
+          sub: `namespace on ${h.name}`,
+          status: g.status,
+          workloads: g.workloads,
+        };
       for (const w of g.workloads) {
-        if (w.id === id) return { kind: 'workload', name: w.name, sub: `${w.kind} in ${g.name} · ${w.ready}/${w.desired} ready`, status: w.status, images: w.images }
-        for (const i of w.images) if (i.id === id) return { kind: 'image', name: i.name, sub: i.ref, status: i.status, assetId: i.assetId }
+        if (w.id === id)
+          return {
+            kind: "workload",
+            name: w.name,
+            sub: `${w.kind} in ${g.name} · ${w.ready}/${w.desired} ready`,
+            status: w.status,
+            images: w.images,
+          };
+        for (const i of w.images)
+          if (i.id === id)
+            return {
+              kind: "image",
+              name: i.name,
+              sub: i.ref,
+              status: i.status,
+              assetId: i.assetId,
+            };
       }
     }
   }
-  for (const x of s.external) if (x.id === id) return { kind: 'external', name: x.name, sub: x.kind, status: x.status, assetId: x.assetId }
-  return null
-})
+  for (const x of s.external)
+    if (x.id === id)
+      return {
+        kind: "external",
+        name: x.name,
+        sub: x.kind,
+        status: x.status,
+        assetId: x.assetId,
+      };
+  return null;
+});
 
-const LEVEL_LABEL: Record<StatusLevel, string> = { p1: 'P1 open', p2: 'P2 open', p3: 'P3 open', p4: 'P4 only', ok: 'Clean', unknown: 'Not scanned' }
+const LEVEL_LABEL: Record<StatusLevel, string> = {
+  p1: "P1 open",
+  p2: "P2 open",
+  p3: "P3 open",
+  p4: "P4 only",
+  ok: "Clean",
+  unknown: "Not scanned",
+};
 const LEVEL_VAR: Record<StatusLevel, string> = {
-  p1: 'var(--color-p1)', p2: 'var(--color-p2)', p3: 'var(--color-p3)', p4: 'var(--color-p4)', ok: 'var(--color-ok)', unknown: '#5b6478',
-}
-const legend: StatusLevel[] = ['p1', 'p2', 'p3', 'p4', 'ok', 'unknown']
+  p1: "var(--color-p1)",
+  p2: "var(--color-p2)",
+  p3: "var(--color-p3)",
+  p4: "var(--color-p4)",
+  ok: "var(--color-ok)",
+  unknown: "#5b6478",
+};
+const legend: StatusLevel[] = ["p1", "p2", "p3", "p4", "ok", "unknown"];
 
 const jumpTargets = computed(() => {
-  const out: { id: string; label: string }[] = []
+  const out: { id: string; label: string }[] = [];
   for (const h of scene.value?.hosts ?? []) {
-    out.push({ id: h.id, label: h.name })
-    for (const g of h.groups) out.push({ id: g.id, label: `  ${g.name}` })
+    out.push({ id: h.id, label: h.name });
+    for (const g of h.groups) out.push({ id: g.id, label: `  ${g.name}` });
   }
-  return out
-})
-const jump = ref('')
+  return out;
+});
+const jump = ref("");
 watch(jump, (v) => {
-  if (v) focusId(v)
-  jump.value = ''
-})
+  if (v) focusId(v);
+  jump.value = "";
+});
 
 const totals = computed(() => {
-  let groups = 0
-  let workloads = 0
+  let groups = 0;
+  let workloads = 0;
   for (const h of scene.value?.hosts ?? []) {
-    groups += h.groups.length
-    for (const g of h.groups) workloads += g.workloads.length
+    groups += h.groups.length;
+    for (const g of h.groups) workloads += g.workloads.length;
   }
-  return { hosts: scene.value?.hosts.length ?? 0, groups, workloads }
-})
+  return { hosts: scene.value?.hosts.length ?? 0, groups, workloads };
+});
 
 function findingsLink(assetId: number | null) {
-  return assetId ? `/findings?asset=${assetId}` : null
+  return assetId ? `/findings?asset=${assetId}` : null;
 }
 </script>
 
 <template>
-  <div class="flex h-[calc(100dvh-4rem)] min-h-[32rem] flex-col gap-3 lg:h-[calc(100dvh-3rem)]">
+  <div
+    class="flex h-[calc(100dvh-4rem)] min-h-[32rem] flex-col gap-3 lg:h-[calc(100dvh-3rem)]"
+  >
     <header class="flex flex-wrap items-end justify-between gap-3">
       <div>
         <p class="eyebrow">Inventory</p>
-        <h1 class="font-display text-3xl tracking-wide text-fog-100 uppercase">Blueprint</h1>
+        <h1 class="font-display text-3xl tracking-wide text-fog-100 uppercase">
+          Blueprint
+        </h1>
         <p v-if="scene" class="text-sm text-fog-400">
-          {{ plural(totals.hosts, 'server') }} · {{ plural(totals.groups, 'app') }} · {{ plural(totals.workloads, 'workload') }} ·
-          updated {{ ago(scene.generatedAt) }}
+          {{ plural(totals.hosts, "server") }} ·
+          {{ plural(totals.groups, "app") }} ·
+          {{ plural(totals.workloads, "workload") }} · updated
+          {{ ago(scene.generatedAt) }}
         </p>
       </div>
       <div class="flex flex-wrap items-center gap-2">
         <label class="sr-only" for="bp-jump">Jump to</label>
-        <select v-if="view !== 'list'" id="bp-jump" v-model="jump" class="input w-48" data-testid="blueprint-jump">
+        <select
+          v-if="view !== 'list'"
+          id="bp-jump"
+          v-model="jump"
+          class="input w-48"
+          data-testid="blueprint-jump"
+        >
           <option value="">Jump to…</option>
-          <option v-for="t in jumpTargets" :key="t.id" :value="t.id">{{ t.label }}</option>
+          <option v-for="t in jumpTargets" :key="t.id" :value="t.id">
+            {{ t.label }}
+          </option>
         </select>
-        <button v-if="view === '3d'" type="button" class="btn btn-ghost btn-sm" data-testid="blueprint-reset" @click="resetView">
+        <button
+          v-if="view === '3d'"
+          type="button"
+          class="btn btn-ghost btn-sm"
+          data-testid="blueprint-reset"
+          @click="resetView"
+        >
           <AppIcon name="rotate-ccw" :size="13" />Overview
         </button>
-        <div class="inline-flex rounded-[4px] border border-ink-600" role="group" aria-label="View">
-          <button type="button" class="btn btn-sm !rounded-none !border-0" :class="view === '3d' ? 'bg-ink-700 text-fog-100' : 'btn-ghost'" :aria-pressed="view === '3d'" data-testid="blueprint-view-3d" @click="view = '3d'">3D</button>
-          <button v-if="walkSupported" type="button" class="btn btn-sm !rounded-none !border-0" :class="view === 'walk' ? 'bg-ink-700 text-fog-100' : 'btn-ghost'" :aria-pressed="view === 'walk'" data-testid="blueprint-view-walk" @click="view = 'walk'">Walk</button>
-          <button type="button" class="btn btn-sm !rounded-none !border-0" :class="view === 'list' ? 'bg-ink-700 text-fog-100' : 'btn-ghost'" :aria-pressed="view === 'list'" data-testid="blueprint-view-list" @click="view = 'list'">List</button>
+        <div
+          class="inline-flex rounded-[4px] border border-ink-600"
+          role="group"
+          aria-label="View"
+        >
+          <button
+            type="button"
+            class="btn btn-sm !rounded-none !border-0"
+            :class="view === '3d' ? 'bg-ink-700 text-fog-100' : 'btn-ghost'"
+            :aria-pressed="view === '3d'"
+            data-testid="blueprint-view-3d"
+            @click="view = '3d'"
+          >
+            3D
+          </button>
+          <button
+            v-if="walkSupported"
+            type="button"
+            class="btn btn-sm !rounded-none !border-0"
+            :class="view === 'walk' ? 'bg-ink-700 text-fog-100' : 'btn-ghost'"
+            :aria-pressed="view === 'walk'"
+            data-testid="blueprint-view-walk"
+            @click="view = 'walk'"
+          >
+            Walk
+          </button>
+          <button
+            type="button"
+            class="btn btn-sm !rounded-none !border-0"
+            :class="view === 'list' ? 'bg-ink-700 text-fog-100' : 'btn-ghost'"
+            :aria-pressed="view === 'list'"
+            data-testid="blueprint-view-list"
+            @click="view = 'list'"
+          >
+            List
+          </button>
         </div>
       </div>
     </header>
 
     <LoadingBlock v-if="loading" :rows="4" label="Loading the blueprint" />
-    <ErrorBlock v-else-if="loadError && !scene" :message="loadError" @retry="load" />
-    <EmptyState v-else-if="!hasTopology" icon="server" title="No topology reported yet" data-testid="blueprint-empty">
-      The blueprint draws what the nightly node scan reports: servers, the apps on them and their containers. Install
-      <code>vengeance-scan</code> and <code>vengeance-topology</code> on each node (see <code>deploy/host/README.md</code>), or wait for the next nightly run.
+    <ErrorBlock
+      v-else-if="loadError && !scene"
+      :message="loadError"
+      @retry="load"
+    />
+    <EmptyState
+      v-else-if="!hasTopology"
+      icon="server"
+      title="No topology reported yet"
+      data-testid="blueprint-empty"
+    >
+      The blueprint draws what the nightly node scan reports: servers, the apps
+      on them and their containers. Install
+      <code>vengeance-scan</code> and <code>vengeance-topology</code> on each
+      node (see <code>deploy/host/README.md</code>), or wait for the next
+      nightly run.
     </EmptyState>
 
     <div v-else class="relative flex min-h-0 flex-1 gap-3">
-      <p v-if="vizError" role="status" class="absolute top-2 left-2 z-10 rounded-[4px] border border-warn/40 bg-ink-900/90 px-3 py-2 text-sm text-warn">{{ vizError }}</p>
+      <p
+        v-if="vizError"
+        role="status"
+        class="absolute top-2 left-2 z-10 rounded-[4px] border border-warn/40 bg-ink-900/90 px-3 py-2 text-sm text-warn"
+      >
+        {{ vizError }}
+      </p>
 
       <!-- 3D -->
-      <div v-if="view !== 'list'" ref="stage" class="bp-stage relative min-w-0 flex-1 overflow-hidden rounded-[6px] border border-ink-600" data-testid="blueprint-stage">
+      <div
+        v-if="view !== 'list'"
+        ref="stage"
+        class="bp-stage relative min-w-0 flex-1 overflow-hidden rounded-[6px] border border-ink-600"
+        data-testid="blueprint-stage"
+      >
         <canvas
           ref="canvas"
           class="absolute inset-0 h-full w-full touch-none outline-none"
@@ -486,36 +723,90 @@ function findingsLink(assetId: number | null) {
             type="button"
             tabindex="-1"
             class="bp-label pointer-events-auto absolute"
-            :class="[`bp-${l.kind}`, `bp-at-${l.anchor ?? 'above'}`, { 'bp-active': l.id === selectedId || l.id === hoveredId }]"
-            :style="{ transform: `translate(${Math.round(l.x)}px, ${Math.round(l.y)}px)`, opacity: Math.max(0.65, 1 - l.depth * 0.35), zIndex: Math.round((1 - l.depth) * 100) }"
+            :class="[
+              `bp-${l.kind}`,
+              `bp-at-${l.anchor ?? 'above'}`,
+              { 'bp-active': l.id === selectedId || l.id === hoveredId },
+            ]"
+            :style="{
+              transform: `translate(${Math.round(l.x)}px, ${Math.round(l.y)}px)`,
+              opacity: Math.max(0.65, 1 - l.depth * 0.35),
+              zIndex: Math.round((1 - l.depth) * 100),
+            }"
             @click="focusId(l.id)"
           >
-            <span class="bp-led" :style="{ background: LEVEL_VAR[(l.level as StatusLevel) || 'unknown'] }" />
+            <span
+              class="bp-led"
+              :style="{
+                background: LEVEL_VAR[(l.level as StatusLevel) || 'unknown'],
+              }"
+            />
             <span class="bp-text">{{ l.text }}</span>
             <span v-if="l.sub" class="bp-sub">{{ l.sub }}</span>
           </button>
         </div>
-        <ul class="absolute bottom-2 left-2 flex flex-wrap gap-x-3 gap-y-1 rounded-[4px] bg-ink-950/80 px-2.5 py-1.5 text-[0.7rem] text-fog-300" aria-label="Legend">
-          <li v-for="lv in legend" :key="lv" class="flex items-center gap-1.5"><span class="bp-led" :style="{ background: LEVEL_VAR[lv] }" />{{ LEVEL_LABEL[lv] }}</li>
-          <li class="flex items-center gap-1.5 text-fog-500">blinking = scan missing or stale</li>
+        <ul
+          class="absolute bottom-2 left-2 flex flex-wrap gap-x-3 gap-y-1 rounded-[4px] bg-ink-950/80 px-2.5 py-1.5 text-[0.7rem] text-fog-300"
+          aria-label="Legend"
+        >
+          <li v-for="lv in legend" :key="lv" class="flex items-center gap-1.5">
+            <span class="bp-led" :style="{ background: LEVEL_VAR[lv] }" />{{
+              LEVEL_LABEL[lv]
+            }}
+          </li>
+          <li class="flex items-center gap-1.5 text-fog-500">
+            blinking = scan missing or stale
+          </li>
         </ul>
         <template v-if="view === 'walk'">
-          <div v-if="locked" class="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" aria-hidden="true">
+          <div
+            v-if="locked"
+            class="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+            aria-hidden="true"
+          >
             <div class="bp-crosshair" :class="{ 'bp-crosshair-on': aimed }" />
           </div>
-          <div v-if="locked && (aimInfo || aimed)" class="pointer-events-none absolute top-[calc(50%+1.6rem)] left-1/2 max-w-[28rem] -translate-x-1/2 rounded-[3px] bg-ink-950/85 px-2.5 py-1.5 text-center font-mono text-xs" data-testid="blueprint-aim">
+          <div
+            v-if="locked && (aimInfo || aimed)"
+            class="pointer-events-none absolute top-[calc(50%+1.6rem)] left-1/2 max-w-[28rem] -translate-x-1/2 rounded-[3px] bg-ink-950/85 px-2.5 py-1.5 text-center font-mono text-xs"
+            data-testid="blueprint-aim"
+          >
             <p class="text-beam-hi">{{ aimInfo?.title ?? aimed }}</p>
-            <p v-if="aimInfo?.meaning" class="text-fog-200">{{ aimInfo.meaning }}</p>
+            <p v-if="aimInfo?.meaning" class="text-fog-200">
+              {{ aimInfo.meaning }}
+            </p>
             <p class="text-fog-500">E to inspect</p>
           </div>
-          <aside v-if="showGuide" class="absolute bottom-12 left-2 z-[260] w-72 rounded-[4px] border border-ink-600 bg-ink-950/90 p-3 text-xs text-fog-300" data-testid="blueprint-guide">
-            <p class="eyebrow mb-1.5">City guide <span class="text-fog-500">(H)</span></p>
+          <aside
+            v-if="showGuide"
+            class="absolute bottom-12 left-2 z-[260] w-72 rounded-[4px] border border-ink-600 bg-ink-950/90 p-3 text-xs text-fog-300"
+            data-testid="blueprint-guide"
+          >
+            <p class="eyebrow mb-1.5">
+              City guide <span class="text-fog-500">(H)</span>
+            </p>
             <ul class="space-y-1">
-              <li v-for="g in CITY_GUIDE" :key="g[0]"><span class="text-fog-100">{{ g[0] }}</span> <span class="text-fog-500">→</span> {{ g[1] }}</li>
+              <li v-for="g in CITY_GUIDE" :key="g[0]">
+                <span class="text-fog-100">{{ g[0] }}</span>
+                <span class="text-fog-500">→</span> {{ g[1] }}
+              </li>
             </ul>
           </aside>
-          <button v-if="!showGuide" type="button" class="absolute bottom-12 left-2 z-[260] rounded-[4px] border border-ink-600 bg-ink-950/85 px-2 py-1 text-xs text-fog-300" data-testid="blueprint-guide-open" @click="showGuide = true">City guide (H)</button>
-          <canvas ref="minimapEl" class="pointer-events-none absolute top-2 right-2 z-[250] h-40 w-40 rounded-[4px] border border-ink-600 bg-ink-950/75" aria-label="Floor plan" data-testid="blueprint-minimap" />
+          <button
+            v-if="!showGuide"
+            type="button"
+            class="absolute bottom-12 left-2 z-[260] rounded-[4px] border border-ink-600 bg-ink-950/85 px-2 py-1 text-xs text-fog-300"
+            data-testid="blueprint-guide-open"
+            @click="showGuide = true"
+          >
+            City guide (H)
+          </button>
+          <canvas
+            ref="minimapEl"
+            class="pointer-events-none absolute top-2 right-2 z-[250] h-40 w-40 rounded-[4px] border border-ink-600 bg-ink-950/75"
+            aria-label="Floor plan"
+            data-testid="blueprint-minimap"
+          />
           <button
             v-if="!locked"
             type="button"
@@ -523,35 +814,97 @@ function findingsLink(assetId: number | null) {
             data-testid="blueprint-enter-walk"
             @click="enterWalk"
           >
-            <span class="font-display text-xl tracking-wider text-fog-100 uppercase">Walk the city</span>
-            <span class="max-w-md text-sm text-fog-300">Every building is a server, every floor an app, every window a workload. Fires, broken glass and dark streets are your findings.</span>
-            <span class="font-mono text-xs text-fog-400">WASD to walk · mouse to look · Shift to run · E or click to inspect · H for the city guide · Esc to leave</span>
+            <span
+              class="font-display text-xl tracking-wider text-fog-100 uppercase"
+              >Walk the city</span
+            >
+            <span class="max-w-md text-sm text-fog-300"
+              >Every building is a server, every floor an app, every window a
+              workload. Fires, broken glass and dark streets are your
+              findings.</span
+            >
+            <span class="font-mono text-xs text-fog-400"
+              >WASD to walk · mouse to look · Shift to run · E or click to
+              inspect · H for the city guide · Esc to leave</span
+            >
           </button>
         </template>
-        <p v-if="view === '3d'" class="absolute top-2 right-2 hidden rounded-[4px] bg-ink-950/80 px-2.5 py-1.5 text-[0.7rem] text-fog-500 xl:block">
-          drag to orbit · shift-drag to pan · scroll to zoom · click to inspect · Esc to zoom out
+        <p
+          v-if="view === '3d'"
+          class="absolute top-2 right-2 hidden rounded-[4px] bg-ink-950/80 px-2.5 py-1.5 text-[0.7rem] text-fog-500 xl:block"
+        >
+          drag to orbit · shift-drag to pan · scroll to zoom · click to inspect
+          · Esc to zoom out
         </p>
       </div>
 
       <!-- List (also the accessible / no-WebGL view) -->
-      <div v-else class="min-w-0 flex-1 overflow-y-auto rounded-[6px] border border-ink-600 p-4" data-testid="blueprint-list">
+      <div
+        v-else
+        class="min-w-0 flex-1 overflow-y-auto rounded-[6px] border border-ink-600 p-4"
+        data-testid="blueprint-list"
+      >
         <section v-for="h in scene!.hosts" :key="h.id" class="mb-6">
-          <button type="button" class="flex w-full items-center gap-2 text-left" data-testid="blueprint-tree-item" :data-id="h.id" @click="focusId(h.id)">
-            <span class="bp-led" :style="{ background: LEVEL_VAR[h.status.level] }" />
-            <span class="font-display text-lg tracking-wide text-fog-100 uppercase">{{ h.name }}</span>
+          <button
+            type="button"
+            class="flex w-full items-center gap-2 text-left"
+            data-testid="blueprint-tree-item"
+            :data-id="h.id"
+            @click="focusId(h.id)"
+          >
+            <span
+              class="bp-led"
+              :style="{ background: LEVEL_VAR[h.status.level] }"
+            />
+            <span
+              class="font-display text-lg tracking-wide text-fog-100 uppercase"
+              >{{ h.name }}</span
+            >
             <span class="text-xs text-fog-500">{{ h.subtitle }}</span>
           </button>
           <ul class="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-            <li v-for="g in h.groups" :key="g.id" class="rounded-[4px] border border-ink-600 p-2.5">
-              <button type="button" class="flex w-full items-center gap-2 text-left" data-testid="blueprint-tree-item" :data-id="g.id" @click="focusId(g.id)">
-                <span class="bp-led" :style="{ background: LEVEL_VAR[g.status.level] }" /><span class="font-medium text-fog-100">{{ g.name }}</span>
-                <span v-if="g.status.open.total" class="ml-auto font-mono text-[0.7rem] text-fog-400">{{ g.status.open.total }} open</span>
+            <li
+              v-for="g in h.groups"
+              :key="g.id"
+              class="rounded-[4px] border border-ink-600 p-2.5"
+            >
+              <button
+                type="button"
+                class="flex w-full items-center gap-2 text-left"
+                data-testid="blueprint-tree-item"
+                :data-id="g.id"
+                @click="focusId(g.id)"
+              >
+                <span
+                  class="bp-led"
+                  :style="{ background: LEVEL_VAR[g.status.level] }"
+                /><span class="font-medium text-fog-100">{{ g.name }}</span>
+                <span
+                  v-if="g.status.open.total"
+                  class="ml-auto font-mono text-[0.7rem] text-fog-400"
+                  >{{ g.status.open.total }} open</span
+                >
               </button>
               <ul class="mt-1.5 space-y-1 text-sm">
                 <li v-for="w in g.workloads" :key="w.id">
-                  <button type="button" class="flex w-full items-center gap-2 text-left text-fog-300 hover:text-fog-100" data-testid="blueprint-tree-item" :data-id="w.id" @click="focusId(w.id)">
-                    <span class="bp-led bp-led-sm" :style="{ background: LEVEL_VAR[w.status.level] }" />{{ w.name }}
-                    <span class="font-mono text-[0.68rem]" :class="w.ready < w.desired ? 'text-warn' : 'text-fog-500'">{{ w.ready }}/{{ w.desired }}</span>
+                  <button
+                    type="button"
+                    class="flex w-full items-center gap-2 text-left text-fog-300 hover:text-fog-100"
+                    data-testid="blueprint-tree-item"
+                    :data-id="w.id"
+                    @click="focusId(w.id)"
+                  >
+                    <span
+                      class="bp-led bp-led-sm"
+                      :style="{ background: LEVEL_VAR[w.status.level] }"
+                    />{{ w.name }}
+                    <span
+                      class="font-mono text-[0.68rem]"
+                      :class="
+                        w.ready < w.desired ? 'text-warn' : 'text-fog-500'
+                      "
+                      >{{ w.ready }}/{{ w.desired }}</span
+                    >
                   </button>
                 </li>
               </ul>
@@ -562,8 +915,17 @@ function findingsLink(assetId: number | null) {
           <p class="eyebrow mb-2">Outside the racks</p>
           <ul class="flex flex-wrap gap-2">
             <li v-for="x in scene!.external" :key="x.id">
-              <button type="button" class="flex items-center gap-2 rounded-[4px] border border-ink-600 px-2 py-1 text-sm text-fog-300" data-testid="blueprint-tree-item" :data-id="x.id" @click="focusId(x.id)">
-                <span class="bp-led bp-led-sm" :style="{ background: LEVEL_VAR[x.status.level] }" />{{ x.name }} <span class="text-fog-500">{{ x.kind }}</span>
+              <button
+                type="button"
+                class="flex items-center gap-2 rounded-[4px] border border-ink-600 px-2 py-1 text-sm text-fog-300"
+                data-testid="blueprint-tree-item"
+                :data-id="x.id"
+                @click="focusId(x.id)"
+              >
+                <span
+                  class="bp-led bp-led-sm"
+                  :style="{ background: LEVEL_VAR[x.status.level] }"
+                />{{ x.name }} <span class="text-fog-500">{{ x.kind }}</span>
               </button>
             </li>
           </ul>
@@ -571,32 +933,73 @@ function findingsLink(assetId: number | null) {
       </div>
 
       <!-- Details -->
-      <aside v-if="found" class="w-80 shrink-0 overflow-y-auto rounded-[6px] border border-ink-600 bg-ink-900 p-4 max-lg:absolute max-lg:inset-y-0 max-lg:right-0 max-lg:z-20 max-lg:w-[min(20rem,100%)]" data-testid="blueprint-panel">
+      <aside
+        v-if="found"
+        class="w-80 shrink-0 overflow-y-auto rounded-[6px] border border-ink-600 bg-ink-900 p-4 max-lg:absolute max-lg:inset-y-0 max-lg:right-0 max-lg:z-20 max-lg:w-[min(20rem,100%)]"
+        data-testid="blueprint-panel"
+      >
         <div class="flex items-start justify-between gap-2">
           <div class="min-w-0">
             <p class="eyebrow">{{ found.kind }}</p>
-            <h2 class="font-display text-xl tracking-wide break-words text-fog-100 uppercase">{{ found.name }}</h2>
+            <h2
+              class="font-display text-xl tracking-wide break-words text-fog-100 uppercase"
+            >
+              {{ found.name }}
+            </h2>
             <p class="text-xs break-all text-fog-400">{{ found.sub }}</p>
           </div>
-          <button type="button" class="btn btn-ghost btn-sm" aria-label="Close details" @click="closePanel"><AppIcon name="x" :size="14" /></button>
+          <button
+            type="button"
+            class="btn btn-ghost btn-sm"
+            aria-label="Close details"
+            @click="closePanel"
+          >
+            <AppIcon name="x" :size="14" />
+          </button>
         </div>
         <p class="mt-3 flex items-center gap-2 text-sm text-fog-200">
-          <span class="bp-led" :style="{ background: LEVEL_VAR[found.status.level] }" />{{ LEVEL_LABEL[found.status.level] }}
-          <span v-if="found.status.stale" class="text-warn">· scan missing or stale</span>
+          <span
+            class="bp-led"
+            :style="{ background: LEVEL_VAR[found.status.level] }"
+          />{{ LEVEL_LABEL[found.status.level] }}
+          <span v-if="found.status.stale" class="text-warn"
+            >· scan missing or stale</span
+          >
         </p>
         <dl class="mt-3 grid grid-cols-4 gap-1 text-center font-mono text-xs">
-          <div v-for="p in (['p1', 'p2', 'p3', 'p4'] as const)" :key="p" class="rounded-[3px] bg-ink-800 py-1.5">
+          <div
+            v-for="p in ['p1', 'p2', 'p3', 'p4'] as const"
+            :key="p"
+            class="rounded-[3px] bg-ink-800 py-1.5"
+          >
             <dt class="text-[0.62rem] text-fog-500 uppercase">{{ p }}</dt>
-            <dd :style="{ color: found.status.open[p] ? LEVEL_VAR[p] : undefined }">{{ found.status.open[p] }}</dd>
+            <dd
+              :style="{
+                color: found.status.open[p] ? LEVEL_VAR[p] : undefined,
+              }"
+            >
+              {{ found.status.open[p] }}
+            </dd>
           </div>
         </dl>
         <template v-if="found.kind === 'group'">
           <p class="eyebrow mt-4 mb-1.5">Workloads</p>
           <ul class="space-y-1 text-sm">
             <li v-for="w in found.workloads" :key="w.id">
-              <button type="button" class="flex w-full items-center gap-2 text-left text-fog-300 hover:text-fog-100" @click="focusId(w.id)">
-                <span class="bp-led bp-led-sm" :style="{ background: LEVEL_VAR[w.status.level] }" />{{ w.name }}
-                <span class="ml-auto font-mono text-[0.68rem]" :class="w.ready < w.desired ? 'text-warn' : 'text-fog-500'">{{ w.ready }}/{{ w.desired }}</span>
+              <button
+                type="button"
+                class="flex w-full items-center gap-2 text-left text-fog-300 hover:text-fog-100"
+                @click="focusId(w.id)"
+              >
+                <span
+                  class="bp-led bp-led-sm"
+                  :style="{ background: LEVEL_VAR[w.status.level] }"
+                />{{ w.name }}
+                <span
+                  class="ml-auto font-mono text-[0.68rem]"
+                  :class="w.ready < w.desired ? 'text-warn' : 'text-fog-500'"
+                  >{{ w.ready }}/{{ w.desired }}</span
+                >
               </button>
             </li>
           </ul>
@@ -605,16 +1008,42 @@ function findingsLink(assetId: number | null) {
           <p class="eyebrow mt-4 mb-1.5">Images</p>
           <ul class="space-y-2 text-sm">
             <li v-for="i in found.images" :key="i.id">
-              <div class="flex items-center gap-2"><span class="bp-led bp-led-sm" :style="{ background: LEVEL_VAR[i.status.level] }" /><span class="text-fog-100">{{ i.name }}</span></div>
-              <p class="font-mono text-[0.68rem] break-all text-fog-500">{{ i.ref }}</p>
-              <RouterLink v-if="i.assetId" :to="`/findings?asset=${i.assetId}`" class="link text-xs">{{ i.status.open.total }} open findings</RouterLink>
-              <span v-else class="text-xs text-fog-500">not in the inventory yet</span>
+              <div class="flex items-center gap-2">
+                <span
+                  class="bp-led bp-led-sm"
+                  :style="{ background: LEVEL_VAR[i.status.level] }"
+                /><span class="text-fog-100">{{ i.name }}</span>
+              </div>
+              <p class="font-mono text-[0.68rem] break-all text-fog-500">
+                {{ i.ref }}
+              </p>
+              <RouterLink
+                v-if="i.assetId"
+                :to="`/findings?asset=${i.assetId}`"
+                class="link text-xs"
+                >{{ i.status.open.total }} open findings</RouterLink
+              >
+              <span v-else class="text-xs text-fog-500"
+                >not in the inventory yet</span
+              >
             </li>
           </ul>
         </template>
-        <div v-if="'assetId' in found && findingsLink(found.assetId)" class="mt-4 flex flex-col gap-2">
-          <RouterLink :to="findingsLink(found.assetId)!" class="btn btn-primary btn-sm justify-center" data-testid="blueprint-findings">Open findings</RouterLink>
-          <RouterLink :to="`/assets/${found.assetId}`" class="btn btn-ghost btn-sm justify-center">Asset details</RouterLink>
+        <div
+          v-if="'assetId' in found && findingsLink(found.assetId)"
+          class="mt-4 flex flex-col gap-2"
+        >
+          <RouterLink
+            :to="findingsLink(found.assetId)!"
+            class="btn btn-primary btn-sm justify-center"
+            data-testid="blueprint-findings"
+            >Open findings</RouterLink
+          >
+          <RouterLink
+            :to="`/assets/${found.assetId}`"
+            class="btn btn-ghost btn-sm justify-center"
+            >Asset details</RouterLink
+          >
         </div>
       </aside>
     </div>
@@ -623,7 +1052,12 @@ function findingsLink(assetId: number | null) {
 
 <style scoped>
 .bp-stage {
-  background: radial-gradient(ellipse at 50% 30%, #0f1d33 0%, #08101d 60%, #050a12 100%);
+  background: radial-gradient(
+    ellipse at 50% 30%,
+    #0f1d33 0%,
+    #08101d 60%,
+    #050a12 100%
+  );
 }
 .bp-led {
   display: inline-block;
@@ -665,7 +1099,9 @@ function findingsLink(assetId: number | null) {
   background: transparent;
   border-color: transparent;
   color: #e3f1ff;
-  text-shadow: 0 0 3px #050c18, 0 0 6px #050c18;
+  text-shadow:
+    0 0 3px #050c18,
+    0 0 6px #050c18;
 }
 .bp-at-center {
   translate: -50% -50%;
@@ -704,7 +1140,7 @@ function findingsLink(assetId: number | null) {
 }
 .bp-crosshair::before,
 .bp-crosshair::after {
-  content: '';
+  content: "";
   position: absolute;
   background: rgb(207 230 255 / 0.85);
   box-shadow: 0 0 4px #050c18;

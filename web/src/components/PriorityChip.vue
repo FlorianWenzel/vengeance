@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import type { Priority } from '../lib/types'
-import { priorityHint } from '../lib/labels'
+import { computed } from "vue";
+import type { Priority } from "../lib/types";
+import { priorityHint } from "../lib/labels";
 
-const props = withDefaults(defineProps<{ p: Priority; size?: 'sm' | 'md' }>(), { size: 'sm' })
-const color = computed(() => `var(--color-p${props.p})`)
+const props = withDefaults(defineProps<{ p: Priority; size?: "sm" | "md" }>(), {
+  size: "sm",
+});
+const color = computed(() => `var(--color-p${props.p})`);
 </script>
 
 <template>
@@ -34,7 +36,7 @@ const color = computed(() => `var(--color-p${props.p})`)
   white-space: nowrap;
 }
 .pchip::before {
-  content: '';
+  content: "";
   width: 0.35rem;
   height: 0.35rem;
   border-radius: 1px;

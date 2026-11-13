@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import AppIcon from './AppIcon.vue'
-import { ago, dateTime } from '../lib/format'
-import { scanTypeLabel } from '../lib/labels'
-import type { CoverageCell } from '../lib/types'
+import AppIcon from "./AppIcon.vue";
+import { ago, dateTime } from "../lib/format";
+import { scanTypeLabel } from "../lib/labels";
+import type { CoverageCell } from "../lib/types";
 
-withDefaults(defineProps<{ cells: CoverageCell[]; stacked?: boolean }>(), { stacked: false })
+withDefaults(defineProps<{ cells: CoverageCell[]; stacked?: boolean }>(), {
+  stacked: false,
+});
 
 function tip(c: CoverageCell) {
-  const exp = `Expected every ${c.maxAgeDays} ${c.maxAgeDays === 1 ? 'day' : 'days'}.`
-  if (!c.lastAt) return `${scanTypeLabel[c.scanType]}: never scanned. ${exp}`
-  return `${scanTypeLabel[c.scanType]}: last ${dateTime(c.lastAt)}. ${exp}`
+  const exp = `Expected every ${c.maxAgeDays} ${c.maxAgeDays === 1 ? "day" : "days"}.`;
+  if (!c.lastAt) return `${scanTypeLabel[c.scanType]}: never scanned. ${exp}`;
+  return `${scanTypeLabel[c.scanType]}: last ${dateTime(c.lastAt)}. ${exp}`;
 }
 </script>
 
@@ -28,8 +30,10 @@ function tip(c: CoverageCell) {
     >
       <AppIcon :name="c.ok ? 'check' : 'triangle-alert'" :size="11" />
       <span class="font-medium">{{ scanTypeLabel[c.scanType] }}</span>
-      <span v-if="!c.ok" class="opacity-90">{{ c.lastAt ? `last ${ago(c.lastAt)}` : 'never' }}</span>
-      <span class="sr-only">{{ c.ok ? 'fresh' : 'gap' }}</span>
+      <span v-if="!c.ok" class="opacity-90">{{
+        c.lastAt ? `last ${ago(c.lastAt)}` : "never"
+      }}</span>
+      <span class="sr-only">{{ c.ok ? "fresh" : "gap" }}</span>
     </li>
   </ul>
 </template>

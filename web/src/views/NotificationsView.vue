@@ -1,50 +1,59 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import PageHeader from '../components/PageHeader.vue'
-import ChannelsPanel from '../components/notifications/ChannelsPanel.vue'
-import RulesPanel from '../components/notifications/RulesPanel.vue'
-import LogPanel from '../components/notifications/LogPanel.vue'
+import { computed, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import PageHeader from "../components/PageHeader.vue";
+import ChannelsPanel from "../components/notifications/ChannelsPanel.vue";
+import RulesPanel from "../components/notifications/RulesPanel.vue";
+import LogPanel from "../components/notifications/LogPanel.vue";
 
-type Tab = 'channels' | 'rules' | 'log'
+type Tab = "channels" | "rules" | "log";
 const TABS: { id: Tab; label: string }[] = [
-  { id: 'channels', label: 'Channels' },
-  { id: 'rules', label: 'Rules' },
-  { id: 'log', label: 'Log' },
-]
+  { id: "channels", label: "Channels" },
+  { id: "rules", label: "Rules" },
+  { id: "log", label: "Log" },
+];
 
-const route = useRoute()
-const router = useRouter()
-const parse = (v: unknown): Tab => (v === 'rules' || v === 'log' ? v : 'channels')
-const tab = ref<Tab>(parse(route.query.tab))
+const route = useRoute();
+const router = useRouter();
+const parse = (v: unknown): Tab =>
+  v === "rules" || v === "log" ? v : "channels";
+const tab = ref<Tab>(parse(route.query.tab));
 
-watch(tab, (t) => router.replace({ query: t === 'channels' ? {} : { tab: t } }))
+watch(tab, (t) =>
+  router.replace({ query: t === "channels" ? {} : { tab: t } }),
+);
 watch(
   () => route.query.tab,
   (v) => (tab.value = parse(v)),
-)
+);
 
-const idx = computed(() => TABS.findIndex((t) => t.id === tab.value))
+const idx = computed(() => TABS.findIndex((t) => t.id === tab.value));
 function onTabKey(e: KeyboardEvent) {
-  let i = idx.value
-  if (e.key === 'ArrowRight') i = (i + 1) % TABS.length
-  else if (e.key === 'ArrowLeft') i = (i - 1 + TABS.length) % TABS.length
-  else if (e.key === 'Home') i = 0
-  else if (e.key === 'End') i = TABS.length - 1
-  else return
-  e.preventDefault()
-  tab.value = TABS[i].id
-  document.getElementById(`tab-${TABS[i].id}`)?.focus()
+  let i = idx.value;
+  if (e.key === "ArrowRight") i = (i + 1) % TABS.length;
+  else if (e.key === "ArrowLeft") i = (i - 1 + TABS.length) % TABS.length;
+  else if (e.key === "Home") i = 0;
+  else if (e.key === "End") i = TABS.length - 1;
+  else return;
+  e.preventDefault();
+  tab.value = TABS[i].id;
+  document.getElementById(`tab-${TABS[i].id}`)?.focus();
 }
 </script>
 
 <template>
   <div>
     <PageHeader title="Notifications" eyebrow="Setup">
-      Channels say where alerts go; rules say what is worth an alert. Digests go out at 08:00 UTC, weekly ones on Mondays.
+      Channels say where alerts go; rules say what is worth an alert. Digests go
+      out at 08:00 UTC, weekly ones on Mondays.
     </PageHeader>
 
-    <div role="tablist" aria-label="Notification settings" class="mb-6 flex gap-1 border-b border-ink-700" @keydown="onTabKey">
+    <div
+      role="tablist"
+      aria-label="Notification settings"
+      class="mb-6 flex gap-1 border-b border-ink-700"
+      @keydown="onTabKey"
+    >
       <button
         v-for="t in TABS"
         :id="`tab-${t.id}`"
@@ -65,7 +74,10 @@ function onTabKey(e: KeyboardEvent) {
 
     <div :id="`panel-${tab}`" role="tabpanel" :aria-labelledby="`tab-${tab}`">
       <ChannelsPanel v-if="tab === 'channels'" />
-      <RulesPanel v-else-if="tab === 'rules'" @need-channel="tab = 'channels'" />
+      <RulesPanel
+        v-else-if="tab === 'rules'"
+        @need-channel="tab = 'channels'"
+      />
       <LogPanel v-else />
     </div>
   </div>
@@ -91,7 +103,7 @@ function onTabKey(e: KeyboardEvent) {
   color: var(--color-fog-100);
 }
 .tabbtn.is-active::after {
-  content: '';
+  content: "";
   position: absolute;
   left: 0.5rem;
   right: 0.5rem;

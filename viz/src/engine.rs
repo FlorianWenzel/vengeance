@@ -149,12 +149,18 @@ impl Engine {
             self.has_scene = true;
             return;
         }
-        let id_of = |l: &Layout, i: Option<usize>| i.and_then(|i| l.nodes.get(i)).map(|n| n.id.clone());
+        let id_of =
+            |l: &Layout, i: Option<usize>| i.and_then(|i| l.nodes.get(i)).map(|n| n.id.clone());
         let focus_id = id_of(&self.layout, self.focus);
         let sel_id = id_of(&self.layout, self.selected);
         let hov_id = id_of(&self.layout, self.hovered);
         let old_focus_center = self.focus.map(|f| self.focus_target(f));
-        let old_hosts: Vec<String> = self.layout.hosts.iter().map(|&i| self.layout.nodes[i].id.clone()).collect();
+        let old_hosts: Vec<String> = self
+            .layout
+            .hosts
+            .iter()
+            .map(|&i| self.layout.nodes[i].id.clone())
+            .collect();
         let had_content = self.has_scene && !self.layout.nodes.is_empty();
 
         self.layout = layout::build(scene);
@@ -167,7 +173,12 @@ impl Engine {
         let r = self.layout.bounds.map(|b| b.radius()).unwrap_or(2.0);
         self.cam.max_dist = r * 5.0 + 8.0;
 
-        let new_hosts: Vec<String> = self.layout.hosts.iter().map(|&i| self.layout.nodes[i].id.clone()).collect();
+        let new_hosts: Vec<String> = self
+            .layout
+            .hosts
+            .iter()
+            .map(|&i| self.layout.nodes[i].id.clone())
+            .collect();
         if !had_content || !self.orbit_framed {
             self.orbit_framed = !self.layout.nodes.is_empty();
             self.cam.stop();
@@ -193,7 +204,10 @@ impl Engine {
     // ---- camera poses ------------------------------------------------------------------
 
     pub fn overview_pose(&self) -> Pose {
-        let b = self.layout.bounds.unwrap_or(Aabb::new(Vec3::new(-1.0, 0.0, -1.0), Vec3::new(1.0, 2.0, 1.0)));
+        let b = self.layout.bounds.unwrap_or(Aabb::new(
+            Vec3::new(-1.0, 0.0, -1.0),
+            Vec3::new(1.0, 2.0, 1.0),
+        ));
         self.cam.frame_box(&b, OVERVIEW_YAW, OVERVIEW_PITCH, 0.9)
     }
 
@@ -285,7 +299,11 @@ impl Engine {
     pub fn resize(&mut self, w: f32, h: f32, dpr: f32) {
         self.css_w = if w.is_finite() { w.max(1.0) } else { 1.0 };
         self.css_h = if h.is_finite() { h.max(1.0) } else { 1.0 };
-        self.dpr = if dpr.is_finite() && dpr > 0.0 { dpr.min(4.0) } else { 1.0 };
+        self.dpr = if dpr.is_finite() && dpr > 0.0 {
+            dpr.min(4.0)
+        } else {
+            1.0
+        };
         self.cam.aspect = self.css_w / self.css_h;
         self.dirty = true;
     }
@@ -299,8 +317,18 @@ impl Engine {
             return self.walk_pointer_down(x, y, button);
         }
         let p = Vec2::new(x, y);
-        let mode = if button == 0 && !self.shift { DragMode::Orbit } else { DragMode::Pan };
-        self.drag = Some(Drag { start: p, last: p, button, mode, moved: false });
+        let mode = if button == 0 && !self.shift {
+            DragMode::Orbit
+        } else {
+            DragMode::Pan
+        };
+        self.drag = Some(Drag {
+            start: p,
+            last: p,
+            button,
+            mode,
+            moved: false,
+        });
         self.pointer = Some(p);
     }
 
@@ -385,7 +413,12 @@ impl Engine {
         let (o, d) = self.cam.ray(x, y, self.css_w, self.css_h);
         let hit = self
             .pick_ray(o, d)
-            .and_then(|i| self.layout.nodes[i].body.ray_hit(o, d).or_else(|| self.layout.nodes[i].pick.ray_hit(o, d)))
+            .and_then(|i| {
+                self.layout.nodes[i]
+                    .body
+                    .ray_hit(o, d)
+                    .or_else(|| self.layout.nodes[i].pick.ray_hit(o, d))
+            })
             .or_else(|| if d.y < -1e-4 { Some(-o.y / d.y) } else { None })
             .map(|t| o + d * t)
             .unwrap_or(pose.target);
@@ -483,7 +516,11 @@ impl Engine {
         if self.mode == Mode::Walk {
             return self.walk_update_hover();
         }
-        let h = if self.drag.is_some_and(|d| d.moved) { None } else { self.pointer.and_then(|p| self.pick(p.x, p.y)) };
+        let h = if self.drag.is_some_and(|d| d.moved) {
+            None
+        } else {
+            self.pointer.and_then(|p| self.pick(p.x, p.y))
+        };
         if h != self.hovered {
             self.hovered = h;
             self.dirty = true;
@@ -502,7 +539,10 @@ impl Engine {
 
     /// Advance animations. Returns true when a redraw is needed.
     pub fn update(&mut self, now: f64) -> bool {
-        let dt = self.last_now.map(|l| ((now - l) / 1000.0) as f32).unwrap_or(0.0);
+        let dt = self
+            .last_now
+            .map(|l| ((now - l) / 1000.0) as f32)
+            .unwrap_or(0.0);
         self.last_now = Some(now);
         self.now = now;
         if self.mode == Mode::Walk {
@@ -552,16 +592,37 @@ impl Engine {
                     if i & 2 != 0 { bb.max.y } else { bb.min.y },
                     if i & 4 != 0 { bb.max.z } else { bb.min.z },
                 );
-                let s = Vec3::new(if i & 1 != 0 { -1.0 } else { 1.0 }, if i & 2 != 0 { -1.0 } else { 1.0 }, if i & 4 != 0 { -1.0 } else { 1.0 });
+                let s = Vec3::new(
+                    if i & 1 != 0 { -1.0 } else { 1.0 },
+                    if i & 2 != 0 { -1.0 } else { 1.0 },
+                    if i & 4 != 0 { -1.0 } else { 1.0 },
+                );
                 g.line(c, c + Vec3::X * s.x * arm.x, rgba(AMBER, 1.0), 2.2, a, 0);
                 g.line(c, c + Vec3::Y * s.y * arm.y, rgba(AMBER, 1.0), 2.2, a, 0);
                 g.line(c, c + Vec3::Z * s.z * arm.z, rgba(AMBER, 1.0), 2.2, a, 0);
             }
             // Footprint on the floor with drop lines.
-            g.rect_y(b.min.x, b.min.z, b.max.x, b.max.z, 0.002, rgba(AMBER, 0.55), 1.0, a, DASH);
+            g.rect_y(
+                b.min.x,
+                b.min.z,
+                b.max.x,
+                b.max.z,
+                0.002,
+                rgba(AMBER, 0.55),
+                1.0,
+                a,
+                DASH,
+            );
             if b.min.y > 0.01 {
                 for (x, z) in [(b.min.x, b.max.z), (b.max.x, b.max.z)] {
-                    g.line(Vec3::new(x, b.min.y, z), Vec3::new(x, 0.002, z), rgba(AMBER, 0.45), 0.9, a, DASH);
+                    g.line(
+                        Vec3::new(x, b.min.y, z),
+                        Vec3::new(x, 0.002, z),
+                        rgba(AMBER, 0.45),
+                        0.9,
+                        a,
+                        DASH,
+                    );
                 }
             }
         }
@@ -634,7 +695,12 @@ impl Engine {
             return false;
         }
         let dir = d / len;
-        self.layout.hosts.iter().any(|&h| self.layout.nodes[h].body.ray_hit(eye, dir).is_some_and(|t| t < len - 0.05))
+        self.layout.hosts.iter().any(|&h| {
+            self.layout.nodes[h]
+                .body
+                .ray_hit(eye, dir)
+                .is_some_and(|t| t < len - 0.05)
+        })
     }
 
     pub fn labels_json(&self) -> String {
@@ -675,7 +741,10 @@ mod tests {
                 if i & 4 != 0 { b.max.z } else { b.min.z },
             );
             let s = screen_of(&e, c);
-            assert!(s.x > -1.0 && s.x < e.css_w + 1.0 && s.y > -1.0 && s.y < e.css_h + 1.0, "corner {c} off screen at {s}");
+            assert!(
+                s.x > -1.0 && s.x < e.css_w + 1.0 && s.y > -1.0 && s.y < e.css_h + 1.0,
+                "corner {c} off screen at {s}"
+            );
         }
         assert!(e.cam.eye().y > 0.0);
     }
@@ -692,7 +761,10 @@ mod tests {
         settle(&mut e);
         // Now a click on a group selects the group.
         let gi = e.layout.index["ns:slowbloom/kube-system"];
-        let s = screen_of(&e, e.layout.nodes[gi].body.center() + Vec3::new(0.0, 0.0, 0.3));
+        let s = screen_of(
+            &e,
+            e.layout.nodes[gi].body.center() + Vec3::new(0.0, 0.0, 0.3),
+        );
         e.pointer_down(s.x, s.y, 0);
         e.pointer_up(s.x, s.y, 0);
         assert_eq!(e.selected, Some(gi), "selected {:?}", e.selected_id());
@@ -778,7 +850,8 @@ mod tests {
         assert!(e.set_scene("not json").is_err());
         assert_eq!(e.selected_id().as_deref(), Some("ns:slowbloom/ghost"));
         // The focused element disappearing flies back out.
-        e.set_scene(r#"{"hosts":[{"id":"x","name":"x","groups":[]}],"external":[]}"#).unwrap();
+        e.set_scene(r#"{"hosts":[{"id":"x","name":"x","groups":[]}],"external":[]}"#)
+            .unwrap();
         assert!(e.selected.is_none() && e.focus.is_none());
         settle(&mut e);
         assert_eq!(e.cam.pose, e.overview_pose());

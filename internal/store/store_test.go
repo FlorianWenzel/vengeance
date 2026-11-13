@@ -353,7 +353,7 @@ func TestTopologyScene(t *testing.T) {
 	}
 	err := s.SaveTopology(ctx, ci, store.TopologyIn{Cluster: "prod",
 		Routes: []store.TopoRoute{{Namespace: "web", Hostnames: []string{"Shop.example.com", "shop.example.com"}}},
-		Nodes: []store.TopoNode{{Name: "n1", Host: "host:node1", CPU: "4", Memory: "8388608Ki", OS: "Ubuntu 24.04", Kubelet: "v1.37.2+k3s1"}},
+		Nodes:  []store.TopoNode{{Name: "n1", Host: "host:node1", CPU: "4", Memory: "8388608Ki", OS: "Ubuntu 24.04", Kubelet: "v1.37.2+k3s1"}},
 		Workloads: []store.TopoWorkld{
 			{Namespace: "db", Name: "postgres", Kind: "StatefulSet", Node: "n1", Ready: 1, Desired: 1,
 				Containers: []store.TopoContainer{{Name: "pg", Image: "docker.io/library/postgres:17.11-alpine"}}},

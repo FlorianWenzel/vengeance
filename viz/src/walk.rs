@@ -81,14 +81,31 @@ pub fn blocked(p: Vec2, colliders: &[Rect]) -> bool {
 
 impl Walker {
     pub fn spawn(pos: Vec3, heading: f32) -> Walker {
-        Walker { pos: Vec2::new(pos.x, pos.z), heading, pitch: -0.06, ..Default::default() }
+        Walker {
+            pos: Vec2::new(pos.x, pos.z),
+            heading,
+            pitch: -0.06,
+            ..Default::default()
+        }
     }
 
     pub fn eye(&self, reduced_motion: bool) -> Vec3 {
-        let bob = if reduced_motion { 0.0 } else { self.bob_amp * (self.bob_phase * 2.0).sin() * 0.028 };
-        let sway = if reduced_motion { 0.0 } else { self.bob_amp * self.bob_phase.sin() * 0.012 };
+        let bob = if reduced_motion {
+            0.0
+        } else {
+            self.bob_amp * (self.bob_phase * 2.0).sin() * 0.028
+        };
+        let sway = if reduced_motion {
+            0.0
+        } else {
+            self.bob_amp * self.bob_phase.sin() * 0.012
+        };
         let right = Vec2::new(self.heading.cos(), self.heading.sin());
-        Vec3::new(self.pos.x + right.x * sway, EYE + bob, self.pos.y + right.y * sway)
+        Vec3::new(
+            self.pos.x + right.x * sway,
+            EYE + bob,
+            self.pos.y + right.y * sway,
+        )
     }
 
     pub fn forward(&self) -> Vec3 {
@@ -101,7 +118,8 @@ impl Walker {
         }
         self.glide = None;
         self.heading = wrap(self.heading + dx.clamp(-500.0, 500.0) * LOOK_RATE);
-        self.pitch = (self.pitch - dy.clamp(-500.0, 500.0) * LOOK_RATE).clamp(-MAX_PITCH, MAX_PITCH);
+        self.pitch =
+            (self.pitch - dy.clamp(-500.0, 500.0) * LOOK_RATE).clamp(-MAX_PITCH, MAX_PITCH);
     }
 
     pub fn glide_to(&mut self, pos: Vec2, heading: f32, pitch: f32, now: f64, dur: f64) {
@@ -113,7 +131,12 @@ impl Walker {
             self.pitch = pitch;
             self.glide = None;
         } else {
-            self.glide = Some(Glide { from: (self.pos, self.heading, self.pitch), to: (pos, heading, pitch), t0: now, dur });
+            self.glide = Some(Glide {
+                from: (self.pos, self.heading, self.pitch),
+                to: (pos, heading, pitch),
+                t0: now,
+                dur,
+            });
         }
     }
 
@@ -184,7 +207,8 @@ impl Walker {
         self.pos = p;
         let moved = p.distance(start);
         // Head bob: one step per ~0.7 m.
-        self.bob_phase = (self.bob_phase + moved / 0.7 * std::f32::consts::PI) % (std::f32::consts::TAU * 64.0);
+        self.bob_phase =
+            (self.bob_phase + moved / 0.7 * std::f32::consts::PI) % (std::f32::consts::TAU * 64.0);
         let amp = (self.vel.length() / WALK).min(1.6);
         self.bob_amp += (amp - self.bob_amp) * (1.0 - (-8.0 * dt).exp());
         true
@@ -196,7 +220,10 @@ mod tests {
     use super::*;
 
     fn wall() -> Vec<Rect> {
-        vec![Rect { min: Vec2::new(-5.0, -3.0), max: Vec2::new(5.0, -2.0) }]
+        vec![Rect {
+            min: Vec2::new(-5.0, -3.0),
+            max: Vec2::new(5.0, -2.0),
+        }]
     }
 
     fn run(w: &mut Walker, secs: f32, c: &[Rect]) {

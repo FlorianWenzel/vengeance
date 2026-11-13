@@ -10,7 +10,10 @@ pub struct Aabb {
 
 impl Aabb {
     pub fn new(a: Vec3, b: Vec3) -> Aabb {
-        Aabb { min: a.min(b), max: a.max(b) }
+        Aabb {
+            min: a.min(b),
+            max: a.max(b),
+        }
     }
     pub fn center(&self) -> Vec3 {
         (self.min + self.max) * 0.5
@@ -22,10 +25,16 @@ impl Aabb {
         self.size().length() * 0.5
     }
     pub fn union(&self, o: &Aabb) -> Aabb {
-        Aabb { min: self.min.min(o.min), max: self.max.max(o.max) }
+        Aabb {
+            min: self.min.min(o.min),
+            max: self.max.max(o.max),
+        }
     }
     pub fn grow(&self, d: f32) -> Aabb {
-        Aabb { min: self.min - Vec3::splat(d), max: self.max + Vec3::splat(d) }
+        Aabb {
+            min: self.min - Vec3::splat(d),
+            max: self.max + Vec3::splat(d),
+        }
     }
     pub fn contains(&self, p: Vec3) -> bool {
         p.cmpge(self.min).all() && p.cmple(self.max).all()
@@ -75,14 +84,30 @@ pub struct Lod {
 }
 
 impl Lod {
-    pub const ALWAYS: Lod = Lod { anchor: Vec3::ZERO, near: 0.0, far: 0.0 };
+    pub const ALWAYS: Lod = Lod {
+        anchor: Vec3::ZERO,
+        near: 0.0,
+        far: 0.0,
+    };
     pub fn far(anchor: Vec3, far: f32) -> Lod {
-        Lod { anchor, near: 0.0, far }
+        Lod {
+            anchor,
+            near: 0.0,
+            far,
+        }
     }
     pub fn vis(&self, eye: Vec3) -> f32 {
         let d = eye.distance(self.anchor);
-        let o = if self.far <= 0.0 { 1.0 } else { 1.0 - smoothstep(self.far * 0.8, self.far, d) };
-        let i = if self.near <= 0.0 { 1.0 } else { smoothstep(self.near * 0.8, self.near, d) };
+        let o = if self.far <= 0.0 {
+            1.0
+        } else {
+            1.0 - smoothstep(self.far * 0.8, self.far, d)
+        };
+        let i = if self.near <= 0.0 {
+            1.0
+        } else {
+            smoothstep(self.near * 0.8, self.near, d)
+        };
         o * i
     }
 }
@@ -130,7 +155,14 @@ impl Geo {
         Aabb::new(self.t(b.min), self.t(b.max))
     }
     pub fn tl(&self, l: Lod) -> Lod {
-        Lod { anchor: if l.far <= 0.0 && l.near <= 0.0 { l.anchor } else { self.t(l.anchor) }, ..l }
+        Lod {
+            anchor: if l.far <= 0.0 && l.near <= 0.0 {
+                l.anchor
+            } else {
+                self.t(l.anchor)
+            },
+            ..l
+        }
     }
 
     pub fn clear(&mut self) {
@@ -152,12 +184,35 @@ impl Geo {
     pub fn line(&mut self, a: Vec3, b: Vec3, c: Rgba, width: f32, lod: Lod, flags: u32) {
         let (a, b, lod) = (self.t(a), self.t(b), self.tl(lod));
         self.lines.extend_from_slice(&[
-            a.x, a.y, a.z, b.x, b.y, b.z, c[0], c[1], c[2], c[3], lod.anchor.x, lod.anchor.y, lod.anchor.z, lod.near,
-            lod.far, flags as f32, width,
+            a.x,
+            a.y,
+            a.z,
+            b.x,
+            b.y,
+            b.z,
+            c[0],
+            c[1],
+            c[2],
+            c[3],
+            lod.anchor.x,
+            lod.anchor.y,
+            lod.anchor.z,
+            lod.near,
+            lod.far,
+            flags as f32,
+            width,
         ]);
     }
 
-    pub fn polyline(&mut self, pts: &[Vec3], closed: bool, c: Rgba, width: f32, lod: Lod, flags: u32) {
+    pub fn polyline(
+        &mut self,
+        pts: &[Vec3],
+        closed: bool,
+        c: Rgba,
+        width: f32,
+        lod: Lod,
+        flags: u32,
+    ) {
         for w in pts.windows(2) {
             self.line(w[0], w[1], c, width, lod, flags);
         }
@@ -168,29 +223,96 @@ impl Geo {
 
     pub fn box_edges(&mut self, b: &Aabb, c: Rgba, width: f32, lod: Lod, flags: u32) {
         let (n, x) = (b.min, b.max);
-        let p = |i: u8| Vec3::new(if i & 1 != 0 { x.x } else { n.x }, if i & 2 != 0 { x.y } else { n.y }, if i & 4 != 0 { x.z } else { n.z });
-        const E: [(u8, u8); 12] = [(0, 1), (2, 3), (4, 5), (6, 7), (0, 2), (1, 3), (4, 6), (5, 7), (0, 4), (1, 5), (2, 6), (3, 7)];
+        let p = |i: u8| {
+            Vec3::new(
+                if i & 1 != 0 { x.x } else { n.x },
+                if i & 2 != 0 { x.y } else { n.y },
+                if i & 4 != 0 { x.z } else { n.z },
+            )
+        };
+        const E: [(u8, u8); 12] = [
+            (0, 1),
+            (2, 3),
+            (4, 5),
+            (6, 7),
+            (0, 2),
+            (1, 3),
+            (4, 6),
+            (5, 7),
+            (0, 4),
+            (1, 5),
+            (2, 6),
+            (3, 7),
+        ];
         for (i, j) in E {
             self.line(p(i), p(j), c, width, lod, flags);
         }
     }
 
     /// Rectangle in the plane z = const (front panels).
-    pub fn rect_z(&mut self, x0: f32, y0: f32, x1: f32, y1: f32, z: f32, c: Rgba, width: f32, lod: Lod, flags: u32) {
-        let pts = [Vec3::new(x0, y0, z), Vec3::new(x1, y0, z), Vec3::new(x1, y1, z), Vec3::new(x0, y1, z)];
+    pub fn rect_z(
+        &mut self,
+        x0: f32,
+        y0: f32,
+        x1: f32,
+        y1: f32,
+        z: f32,
+        c: Rgba,
+        width: f32,
+        lod: Lod,
+        flags: u32,
+    ) {
+        let pts = [
+            Vec3::new(x0, y0, z),
+            Vec3::new(x1, y0, z),
+            Vec3::new(x1, y1, z),
+            Vec3::new(x0, y1, z),
+        ];
         self.polyline(&pts, true, c, width, lod, flags);
     }
 
     /// Rectangle in the plane y = const (floor marks, table tops).
-    pub fn rect_y(&mut self, x0: f32, z0: f32, x1: f32, z1: f32, y: f32, c: Rgba, width: f32, lod: Lod, flags: u32) {
-        let pts = [Vec3::new(x0, y, z0), Vec3::new(x1, y, z0), Vec3::new(x1, y, z1), Vec3::new(x0, y, z1)];
+    pub fn rect_y(
+        &mut self,
+        x0: f32,
+        z0: f32,
+        x1: f32,
+        z1: f32,
+        y: f32,
+        c: Rgba,
+        width: f32,
+        lod: Lod,
+        flags: u32,
+    ) {
+        let pts = [
+            Vec3::new(x0, y, z0),
+            Vec3::new(x1, y, z0),
+            Vec3::new(x1, y, z1),
+            Vec3::new(x0, y, z1),
+        ];
         self.polyline(&pts, true, c, width, lod, flags);
     }
 
     /// Rectangle in the plane x = const (wall-facing panels).
     #[allow(clippy::too_many_arguments)]
-    pub fn rect_x(&mut self, x: f32, y0: f32, z0: f32, y1: f32, z1: f32, c: Rgba, width: f32, lod: Lod, flags: u32) {
-        let pts = [Vec3::new(x, y0, z0), Vec3::new(x, y0, z1), Vec3::new(x, y1, z1), Vec3::new(x, y1, z0)];
+    pub fn rect_x(
+        &mut self,
+        x: f32,
+        y0: f32,
+        z0: f32,
+        y1: f32,
+        z1: f32,
+        c: Rgba,
+        width: f32,
+        lod: Lod,
+        flags: u32,
+    ) {
+        let pts = [
+            Vec3::new(x, y0, z0),
+            Vec3::new(x, y0, z1),
+            Vec3::new(x, y1, z1),
+            Vec3::new(x, y1, z0),
+        ];
         self.polyline(&pts, true, c, width, lod, flags);
     }
 
@@ -198,22 +320,59 @@ impl Geo {
         let (b, lod) = (self.tb(b), self.tl(lod));
         let s = b.size();
         self.faces.extend_from_slice(&[
-            b.min.x, b.min.y, b.min.z, s.x, s.y, s.z, c[0], c[1], c[2], c[3], lod.anchor.x, lod.anchor.y, lod.anchor.z,
-            lod.near, lod.far, flags as f32,
+            b.min.x,
+            b.min.y,
+            b.min.z,
+            s.x,
+            s.y,
+            s.z,
+            c[0],
+            c[1],
+            c[2],
+            c[3],
+            lod.anchor.x,
+            lod.anchor.y,
+            lod.anchor.z,
+            lod.near,
+            lod.far,
+            flags as f32,
         ]);
     }
 
     pub fn led(&mut self, p: Vec3, size: f32, rgb: [f32; 3], lod: Lod, flags: u32, min_px: f32) {
         let (p, lod) = (self.t(p), self.tl(lod));
         self.leds.extend_from_slice(&[
-            p.x, p.y, p.z, size, rgb[0], rgb[1], rgb[2], 1.0, lod.anchor.x, lod.anchor.y, lod.anchor.z, lod.near, lod.far,
-            flags as f32, min_px, 0.0,
+            p.x,
+            p.y,
+            p.z,
+            size,
+            rgb[0],
+            rgb[1],
+            rgb[2],
+            1.0,
+            lod.anchor.x,
+            lod.anchor.y,
+            lod.anchor.z,
+            lod.near,
+            lod.far,
+            flags as f32,
+            min_px,
+            0.0,
         ]);
     }
 
     /// Animated particle (fire / smoke flags); `phase` in 0..1 staggers the loop.
     #[allow(clippy::too_many_arguments)]
-    pub fn particle(&mut self, p: Vec3, size: f32, rgb: [f32; 3], lod: Lod, flags: u32, min_px: f32, phase: f32) {
+    pub fn particle(
+        &mut self,
+        p: Vec3,
+        size: f32,
+        rgb: [f32; 3],
+        lod: Lod,
+        flags: u32,
+        min_px: f32,
+        phase: f32,
+    ) {
         self.led(p, size, rgb, lod, flags, min_px);
         let n = self.leds.len();
         self.leds[n - 1] = phase;
@@ -240,10 +399,22 @@ mod tests {
     #[test]
     fn ray_box() {
         let b = Aabb::new(Vec3::ZERO, Vec3::ONE);
-        assert_eq!(b.ray_hit(Vec3::new(0.5, 0.5, 5.0), Vec3::new(0.0, 0.0, -1.0)), Some(4.0));
-        assert_eq!(b.ray_hit(Vec3::new(2.0, 0.5, 5.0), Vec3::new(0.0, 0.0, -1.0)), None);
-        assert_eq!(b.ray_hit(Vec3::new(0.5, 0.5, 0.5), Vec3::new(0.0, 0.0, -1.0)), Some(0.0));
-        assert_eq!(b.ray_hit(Vec3::new(0.5, 0.5, 5.0), Vec3::new(0.0, 0.0, 1.0)), None);
+        assert_eq!(
+            b.ray_hit(Vec3::new(0.5, 0.5, 5.0), Vec3::new(0.0, 0.0, -1.0)),
+            Some(4.0)
+        );
+        assert_eq!(
+            b.ray_hit(Vec3::new(2.0, 0.5, 5.0), Vec3::new(0.0, 0.0, -1.0)),
+            None
+        );
+        assert_eq!(
+            b.ray_hit(Vec3::new(0.5, 0.5, 0.5), Vec3::new(0.0, 0.0, -1.0)),
+            Some(0.0)
+        );
+        assert_eq!(
+            b.ray_hit(Vec3::new(0.5, 0.5, 5.0), Vec3::new(0.0, 0.0, 1.0)),
+            None
+        );
     }
 
     #[test]
@@ -253,7 +424,11 @@ mod tests {
         assert_eq!(l.vis(Vec3::new(0.0, 0.0, 11.0)), 0.0);
         let m = l.vis(Vec3::new(0.0, 0.0, 9.0));
         assert!(m > 0.0 && m < 1.0);
-        let n = Lod { anchor: Vec3::ZERO, near: 4.0, far: 0.0 };
+        let n = Lod {
+            anchor: Vec3::ZERO,
+            near: 4.0,
+            far: 0.0,
+        };
         assert_eq!(n.vis(Vec3::new(0.0, 0.0, 1.0)), 0.0);
         assert_eq!(n.vis(Vec3::new(0.0, 0.0, 50.0)), 1.0);
     }

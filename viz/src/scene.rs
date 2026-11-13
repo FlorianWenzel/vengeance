@@ -39,7 +39,11 @@ impl Level {
     /// LED colour from the contract palette.
     pub fn rgb(self) -> [f32; 3] {
         fn hex(h: u32) -> [f32; 3] {
-            [((h >> 16) & 255) as f32 / 255.0, ((h >> 8) & 255) as f32 / 255.0, (h & 255) as f32 / 255.0]
+            [
+                ((h >> 16) & 255) as f32 / 255.0,
+                ((h >> 8) & 255) as f32 / 255.0,
+                (h & 255) as f32 / 255.0,
+            ]
         }
         match self {
             Level::P1 => hex(0xff4d5e),
@@ -87,14 +91,21 @@ fn de_level<'de, D: Deserializer<'de>>(d: D) -> Result<Level, D::Error> {
 }
 
 /// Deserialize a list, skipping elements that fail to parse (and treating null as empty).
-fn de_list<'de, D: Deserializer<'de>, T: for<'a> Deserialize<'a>>(d: D) -> Result<Vec<T>, D::Error> {
+fn de_list<'de, D: Deserializer<'de>, T: for<'a> Deserialize<'a>>(
+    d: D,
+) -> Result<Vec<T>, D::Error> {
     Ok(match Value::deserialize(d)? {
-        Value::Array(items) => items.into_iter().filter_map(|v| T::deserialize(v).ok()).collect(),
+        Value::Array(items) => items
+            .into_iter()
+            .filter_map(|v| T::deserialize(v).ok())
+            .collect(),
         _ => Vec::new(),
     })
 }
 
-fn de_obj<'de, D: Deserializer<'de>, T: for<'a> Deserialize<'a> + Default>(d: D) -> Result<T, D::Error> {
+fn de_obj<'de, D: Deserializer<'de>, T: for<'a> Deserialize<'a> + Default>(
+    d: D,
+) -> Result<T, D::Error> {
     Ok(T::deserialize(Value::deserialize(d)?).unwrap_or_default())
 }
 
@@ -161,7 +172,11 @@ impl Status {
 
 fn de_strings<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<String>, D::Error> {
     Ok(match Value::deserialize(d)? {
-        Value::Array(items) => items.into_iter().filter_map(|v| v.as_str().map(|s| s.to_string())).filter(|s| !s.is_empty()).collect(),
+        Value::Array(items) => items
+            .into_iter()
+            .filter_map(|v| v.as_str().map(|s| s.to_string()))
+            .filter(|s| !s.is_empty())
+            .collect(),
         _ => Vec::new(),
     })
 }
@@ -202,7 +217,14 @@ pub fn epoch_days(ts: &str) -> Option<f64> {
     let y = num(ts.get(0..4)?)?;
     let m = num(ts.get(5..7)?)?;
     let d = num(ts.get(8..10)?)?;
-    let (hh, mm) = if b.len() >= 16 { (num(ts.get(11..13)?).unwrap_or(0), num(ts.get(14..16)?).unwrap_or(0)) } else { (0, 0) };
+    let (hh, mm) = if b.len() >= 16 {
+        (
+            num(ts.get(11..13)?).unwrap_or(0),
+            num(ts.get(14..16)?).unwrap_or(0),
+        )
+    } else {
+        (0, 0)
+    };
     if !(1..=12).contains(&m) || !(1..=31).contains(&d) {
         return None;
     }
