@@ -12,3 +12,9 @@ e2e/playwright-report/
 # Blueprint renderer build output
 web/src/viz/pkg/
 viz/target/
+
+# Nix and direnv
+.direnv/
+result
+result-*
+.pre-commit-config.yaml

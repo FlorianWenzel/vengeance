@@ -1,0 +1,45 @@
+name: nix vendor hash
+
+# package.nix pins the Go modules for the Nix build with one hash (vendorHash) that
+# changes whenever go.sum does. This job keeps it current, so bumping a Go dependency
+# never requires Nix. Pull requests from this repository (Dependabot included) get a
+# fixup commit. Forks cannot be pushed to: there the job fails and names the command.
+
+on:
+  pull_request:
+    paths: [go.mod, go.sum, package.nix]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nix-vendor-hash-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The pull request branch itself, not the merge commit, so the fixup can be pushed.
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.head_ref }}
+      - uses: cachix/install-nix-action@v31
+      - name: Refresh vendorHash
+        run: nix run .#vendor-hash
+      - name: Commit the new hash
+        if: github.event.pull_request.head.repo.full_name == github.repository
+        run: |
+          git diff --quiet -- package.nix && exit 0
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "build(nix): refresh vendorHash" -- package.nix
+          git push
+      - name: Require the new hash (forks)
+        if: github.event.pull_request.head.repo.full_name != github.repository
+        run: |
+          git diff --exit-code -- package.nix || {
+            echo "::error file=package.nix::vendorHash is out of date. Run: nix run .#vendor-hash"
+            exit 1
+          }

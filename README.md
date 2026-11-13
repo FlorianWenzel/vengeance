@@ -305,6 +305,15 @@ VENGEANCE_OIDC_ALLOWED_EMAILS=admin@example.com go run ./cmd/vengeance serve
 
 Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
+### With Nix
+
+Optional. `nix develop` (or [direnv](https://direnv.net/) with the checked-in `.envrc`) gives a shell with
+the Go, Node and Rust toolchains, the matching `wasm-bindgen` and the git hooks; the commands above work
+unchanged inside it. `nix build` builds the server with the UI embedded, `nix flake check` runs the hooks,
+all tests and the end-to-end suite in a VM, and `nixosModules.default` provides `services.vengeance`.
+The only hash in the Nix files (`vendorHash` in `package.nix`) is refreshed automatically when `go.sum`
+changes, so changing dependencies needs no Nix.
+
 ## License
 
 [AGPL-3.0](LICENSE). Use it, run it, change it. If you offer a modified version to others over a
