@@ -32,6 +32,10 @@ web-sys = { version = "0.3", features = [
   "WebGlUniformLocation",
 ] }
 
+[lints.clippy]
+# The geometry helpers take their coordinates as plain arguments.
+too_many_arguments = "allow"
+
 [profile.release]
 opt-level = "z"
 lto = true
