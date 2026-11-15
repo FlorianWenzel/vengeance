@@ -17,7 +17,7 @@ COPY viz ./viz
 COPY scripts/build-viz.sh ./scripts/build-viz.sh
 RUN mkdir -p web/src/viz && bash scripts/build-viz.sh
 
-FROM --platform=$BUILDPLATFORM node:24-alpine AS web
+FROM --platform=$BUILDPLATFORM node:26-alpine AS web
 WORKDIR /src/web
 COPY web/package.json web/package-lock.json ./
 RUN npm ci --no-audit --no-fund
