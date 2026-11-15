@@ -121,7 +121,7 @@ in
 
     # The one hash in this repo. It changes with go.sum and is refreshed by the vendor-hash
     # git hook and the nix-vendor-hash workflow, or by hand: `nix run .#vendor-hash`
-    vendorHash = "sha256-WA+boiUE/zGcogWoYGNUgRdzF82jh4FdMak4WvQC9xA=";
+    vendorHash = "sha256-HhAobosfjA9Gu6UL3coRv7DWbiCBkfvBW9t+4w90GSc=";
     # Fetching the modules needs neither the UI nor a name that changes with every commit
     overrideModAttrs = _: {
       name = "vengeance-go-modules";
