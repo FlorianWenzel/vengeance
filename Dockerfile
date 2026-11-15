@@ -25,7 +25,7 @@ COPY web/ ./
 COPY --from=viz /src/web/src/viz/pkg ./src/viz/pkg
 RUN npm run build
 
-FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS build
+FROM --platform=$BUILDPLATFORM golang:1.27-alpine AS build
 ARG VERSION=dev
 ARG TARGETOS
 ARG TARGETARCH
