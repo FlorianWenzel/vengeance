@@ -2,7 +2,7 @@
 # The UI and the WASM renderer are platform-independent, and Go cross-compiles, so every
 # build stage runs on the build machine's platform; only the final image is per-platform.
 
-FROM --platform=$BUILDPLATFORM rust:1.99-alpine AS viz
+FROM --platform=$BUILDPLATFORM rust:1.100-alpine AS viz
 ARG WASM_BINDGEN_VERSION=0.2.129
 RUN apk add --no-cache musl-dev curl bash \
  && rustup target add wasm32-unknown-unknown \
